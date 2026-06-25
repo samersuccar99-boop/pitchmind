@@ -796,7 +796,7 @@ Return ONLY raw JSON:
                 <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px", marginBottom: "24px" }}>
                   <div style={{ fontSize: "11px", fontWeight: "700", color: C.dim, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>How to export from {profile.b2cPlatform}</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                    {profile.b2cPlatform === "Meta Ads" ? [
+                    {(profile.b2cPlatform === "Meta Ads" ? [
                       { step: "1", text: "Go to Meta Ads Manager" },
                       { step: "2", text: "Click Audiences → Custom Audiences" },
                       { step: "3", text: "Export your engaged audience as CSV" },
@@ -806,7 +806,7 @@ Return ONLY raw JSON:
                       { step: "2", text: "Click Reporting → Export Data" },
                       { step: "3", text: "Select audience engagement report" },
                       { step: "4", text: "Upload the CSV file below" },
-                    ].map(({ step, text }) => (
+                    ]).map(({ step, text }) => (
                       <div key={step} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
                         <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: accentGlow, border: `1px solid ${accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "800", color: accentColor, flexShrink: 0 }}>{step}</div>
                         <div style={{ fontSize: "12px", color: C.muted }}>{text}</div>
