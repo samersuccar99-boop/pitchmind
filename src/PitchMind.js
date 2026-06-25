@@ -347,7 +347,25 @@ Rules: 6 OPEN businesses, scores 75-95, realistic for ${profile.location}.`;
       const headers = Object.keys(csvData[0] || {});
       const csvType = detectCSVType(headers, csvData);
       const sample = csvData.slice(0, 15);
-      const summary = sample.map((r, i) => `Row ${i+1}: ${Object.entries(r).map(([k,v]) => `${k}="${v}"`).join(", ")}`).join("\n");
+      // Extract meaningful name field from row
+      const getRowName = (row) => {
+        const nameKeys = ['campaign name', 'ad name', 'ad set name', 'name', 'email', 'first name', 'campaign', 'customer'];
+        for (const key of nameKeys) {
+          const val = Object.entries(row).find(([k]) => k.toLowerCase().includes(key));
+          if (val && val[1] && val[1].trim()) return val[1].trim();
+        }
+        return null;
+      };
+
+      const summary = sample.map((r, i) => {
+        const name = getRowName(r);
+        const keyFields = Object.entries(r)
+          .filter(([k,v]) => v && v.toString().trim() && v !== '0' && v !== '0.00')
+          .slice(0, 8)
+          .map(([k,v]) => `${k}: ${v}`)
+          .join(' | ');
+        return `[${i+1}] ${name ? `NAME: ${name} | ` : ''}${keyFields}`;
+      }).join("\n");
 
       setCsvProgress(`✅ Detected: ${csvType === "leads" ? "Lead Ads data (individual contacts)" : csvType === "campaigns" ? "Campaign performance data" : csvType === "tiktok" ? "TikTok Ads data" : csvType === "google" ? "Google Ads data" : "Engagement data"} — generating intelligence...`);
 
@@ -366,7 +384,9 @@ ${csvType === "leads" ? "Extract real contacts. Score by engagement signals. Use
 
 Return ONLY a raw JSON array. Start with [ end with ]. No markdown, no explanation.
 Generate exactly ${Math.min(sample.length, 8)} objects, one per data row:
-[{"name":"Person name OR Campaign name OR Ad name","platform":"${profile.b2cPlatform}","location":"location or N/A","engagement":"Key metrics: e.g. 66 conversations started, $3.45 cost per result, 10493 reach","score":88,"interestLevel":"High/Medium/Low","dataType":"${csvType}","keyMetric":"The single most important metric from this row","likelyObjection":"Main barrier to conversion","bestApproach":"WhatsApp/DM/Email/Retarget Ad","personalizedMessage":"Specific outreach message based on the actual data","followUp1":"Day 2 follow-up","followUp2":"Day 5 follow-up","followUp3":"Day 10 follow-up","painPoint":"Why this audience needs ${profile.businessName}","hotReason":"Specific reason this is a hot lead based on the data","strategy":"One specific action to take with this campaign/person"}]`;
+[{"name":"EXACT campaign/ad/person name from the data — never use generic Contact N","platform":"${profile.b2cPlatform}","location":"location or N/A","engagement":"Summarize key metrics in plain English e.g. 66 conversations, 10K reach, $3.45 per result","score":88,"interestLevel":"High/Medium/Low","dataType":"${csvType}","keyMetric":"Single best metric e.g. 66 leads at $3.45 each or 95% video completion","likelyObjection":"Specific barrier based on their data","bestApproach":"WhatsApp/DM/Email/Retarget Ad","personalizedMessage":"Message referencing their actual campaign performance","followUp1":"Day 2 follow-up referencing the campaign","followUp2":"Day 5 follow-up with new angle","followUp3":"Day 10 final offer","painPoint":"Specific insight about this campaign audience","hotReason":"Exact reason based on their metrics why this is HOT","strategy":"Concrete next action e.g. retarget with 20% discount offer"}]
+
+IMPORTANT: Use the ACTUAL campaign/ad names from the data for the name field. Never use generic names like Contact 1, Contact 2.`;
 
       const raw = await callClaude(apiKey, prompt, 3000);
       let parsed;
