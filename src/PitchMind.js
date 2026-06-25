@@ -145,6 +145,7 @@ export default function PitchMind() {
   const [csvProcessing, setCsvProcessing] = useState(false);
   const [csvProgress, setCsvProgress] = useState("");
   const [csvErr, setCsvErr] = useState("");
+  const [savedFilter, setSavedFilter] = useState("all");
   const fileRef = useRef();
 
   useEffect(() => {
@@ -268,7 +269,7 @@ export default function PitchMind() {
     try {
       const prompt = `You are PitchMind AI. Generate exactly 6 HOT business leads as a JSON array.
 MY BUSINESS: ${profile.businessName}. WHAT I OFFER: ${profile.whatYouDo}.
-TARGET: ${profile.targetIndustry} businesses in ${profile.location} that are CURRENTLY OPEN and WEAK in what I offer.
+TARGET: ${${profile.targetIndustry || "businesses"} in ${profile.location || "your area"} that are CURRENTLY OPEN and WEAK in what I offer.
 IMPORTANT: Return ONLY a valid JSON array. Start with [ end with ]. No markdown.
 [{"name":"Real Business Name","type":"${profile.targetIndustry}","location":"${profile.location}","address":"Real street address","phone":"Local phone","website":"No website","rating":2.8,"reviews":14,"score":88,"weaknesses":["No website","Low reviews","No social media"],"painPoint":"Why they need ${profile.businessName}.","hotReason":"Why HOT right now."}]
 Rules: 6 OPEN businesses, scores 75-95, realistic for ${profile.location}.`;
@@ -581,7 +582,7 @@ Return ONLY raw JSON:
       <style>{CSS}</style>
       <div style={{ maxWidth: "560px", width: "100%", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "20px", padding: "40px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
-          <div style={{ padding: "6px 12px", background: mode === "b2b" ? C.b2bGlow : C.b2cGlow, border: `1px solid ${mode === "b2b" ? C.b2bBorder : C.b2cBorder}`, borderRadius: "20px", fontSize: "12px", fontWeight: "700", color: mode === "b2b" ? C.b2bLight : C.b2cLight, textTransform: "uppercase", letterSpacing: "1px" }}>
+          <div style={{ padding: "6px 12px", background: safeMode === "b2b" ? C.b2bGlow : C.b2cGlow, border: `1px solid ${mode === "b2b" ? C.b2bBorder : C.b2cBorder}`, borderRadius: "20px", fontSize: "12px", fontWeight: "700", color: safeMode === "b2b" ? C.b2bLight : C.b2cLight, textTransform: "uppercase", letterSpacing: "1px" }}>
             {mode === "b2b" ? "🏢 B2B Mode" : "👥 B2C Mode"}
           </div>
         </div>
@@ -608,7 +609,7 @@ Return ONLY raw JSON:
             )}
           </div>
         ))}
-        {mode === "b2c" && (
+        {safeMode === "b2c" && (
           <div style={{ marginBottom: "18px" }}>
             <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.muted, marginBottom: "8px", letterSpacing: "1px", textTransform: "uppercase" }}>Ad Platform</label>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -623,7 +624,7 @@ Return ONLY raw JSON:
         )}
         {profileErr && <div style={{ color: "#F87171", fontSize: "13px", marginBottom: "16px" }}>{profileErr}</div>}
         <button onClick={doProfile}
-          style={{ width: "100%", padding: "13px", background: `linear-gradient(135deg, ${mode === "b2b" ? C.b2b : C.b2c}, ${mode === "b2b" ? C.b2bLight : C.b2cLight})`, border: "none", borderRadius: "10px", color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer", boxShadow: `0 4px 20px ${mode === "b2b" ? C.b2bGlow : C.b2cGlow}` }}>
+          style={{ width: "100%", padding: "13px", background: `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})`, border: "none", borderRadius: "10px", color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer", boxShadow: `0 4px 20px ${safeMode === "b2b" ? C.b2bGlow : C.b2cGlow}` }}>
           Launch PitchMind →
         </button>
       </div>
@@ -631,9 +632,10 @@ Return ONLY raw JSON:
   );
 
   // ── DASHBOARD ──
-  const accentColor = mode === "b2b" ? C.b2bLight : C.b2cLight;
-  const accentGlow = mode === "b2b" ? C.b2bGlow : C.b2cGlow;
-  const accentBorder = mode === "b2b" ? C.b2bBorder : C.b2cBorder;
+  const safeMode = mode || "b2b";
+  const accentColor = safeMode === "b2b" ? C.b2bLight : C.b2cLight;
+  const accentGlow = safeMode === "b2b" ? C.b2bGlow : C.b2cGlow;
+  const accentBorder = safeMode === "b2b" ? C.b2bBorder : C.b2cBorder;
   const hotCount = savedLeads.filter(l => l.score >= 80).length;
   const closedCount = savedLeads.filter(l => l.status === "closed").length;
   const pipelineCount = savedLeads.filter(l => ["contacted", "inprogress"].includes(l.status)).length;
@@ -647,8 +649,8 @@ Return ONLY raw JSON:
       <div style={{ padding: "0 32px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(8,11,15,0.95)", borderBottom: `1px solid ${C.border}`, backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <div onClick={() => setScreen("dashboard")} style={{ fontSize: "16px", fontWeight: "900", letterSpacing: "3px", background: `linear-gradient(135deg, ${C.b2bLight}, ${C.b2cLight})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", cursor: "pointer", textTransform: "uppercase" }}>PITCHMIND</div>
-          <div style={{ padding: "3px 10px", background: mode === "b2b" ? C.b2bGlow : C.b2cGlow, border: `1px solid ${accentBorder}`, borderRadius: "20px", fontSize: "11px", fontWeight: "700", color: accentColor, letterSpacing: "1px", textTransform: "uppercase" }}>
-            {mode === "b2b" ? "🏢 B2B" : "👥 B2C"}
+          <div style={{ padding: "3px 10px", background: safeMode === "b2b" ? C.b2bGlow : C.b2cGlow, border: `1px solid ${accentBorder}`, borderRadius: "20px", fontSize: "11px", fontWeight: "700", color: accentColor, letterSpacing: "1px", textTransform: "uppercase" }}>
+            {safeMode === "b2b" ? "🏢 B2B" : "👥 B2C"}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -660,9 +662,9 @@ Return ONLY raw JSON:
             <span style={{ fontSize: "12px", fontWeight: "700", color: accentColor }}>{userData?.credits}</span>
             <span style={{ fontSize: "11px", color: C.dim }}>/ {userData?.maxCredits} credits</span>
           </div>
-          <button onClick={() => { setMode(mode === "b2b" ? "b2c" : "b2b"); updateDoc(doc(db, "users", user.uid), { mode: mode === "b2b" ? "b2c" : "b2b" }); }}
+          <button onClick={() => { setMode(safeMode === "b2b" ? "b2c" : "b2b"); updateDoc(doc(db, "users", user.uid), { mode: safeMode === "b2b" ? "b2c" : "b2b" }); }}
             style={{ padding: "6px 12px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
-            Switch to {mode === "b2b" ? "B2C" : "B2B"}
+            Switch to {safeMode === "b2b" ? "B2C" : "B2B"}
           </button>
           <button onClick={() => setScreen("profile")} style={{ padding: "6px 12px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px" }}>Settings</button>
           <button onClick={doLogout} style={{ padding: "6px 12px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.dim, cursor: "pointer", fontSize: "11px" }}>Logout</button>
@@ -703,11 +705,11 @@ Return ONLY raw JSON:
         {/* TABS */}
         <div style={{ display: "flex", gap: "4px", marginBottom: "28px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "5px" }}>
           {[
-            { key: "scan", label: mode === "b2b" ? "🔍 Scan Businesses" : "📤 Upload Ad Data" },
+            { key: "scan", label: safeMode === "b2b" ? "🔍 Scan Businesses" : "📤 Upload Ad Data" },
             { key: "saved", label: `💾 My Leads${savedLeads.length > 0 ? ` (${savedLeads.length})` : ""}` },
           ].map(t => (
             <button key={t.key} onClick={() => { setActiveTab(t.key); if (t.key === "saved" && user) loadLeads(user.uid); }}
-              style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "700", transition: "all 0.2s", background: activeTab === t.key ? `linear-gradient(135deg, ${mode === "b2b" ? C.b2b : C.b2c}, ${mode === "b2b" ? C.b2bLight : C.b2cLight})` : "transparent", color: activeTab === t.key ? "#fff" : C.muted, boxShadow: activeTab === t.key ? `0 2px 12px ${accentGlow}` : "none" }}>
+              style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "700", transition: "all 0.2s", background: activeTab === t.key ? `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})` : "transparent", color: activeTab === t.key ? "#fff" : C.muted, boxShadow: activeTab === t.key ? `0 2px 12px ${accentGlow}` : "none" }}>
               {t.label}
             </button>
           ))}
@@ -717,7 +719,7 @@ Return ONLY raw JSON:
         {activeTab === "scan" && (
           <>
             {/* B2B SCAN */}
-            {mode === "b2b" && (
+            {safeMode === "b2b" && (
               <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px", marginBottom: "28px" }}>
                 <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "18px" }}>⚡ SCAN FOR HOT LEADS <span style={{ color: C.dim, fontWeight: "400", textTransform: "none", letterSpacing: "0" }}>— 1 credit per scan</span></div>
                 <div style={{ display: "flex", gap: "14px", alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -747,7 +749,7 @@ Return ONLY raw JSON:
             )}
 
             {/* B2C UPLOAD */}
-            {mode === "b2c" && (
+            {safeMode === "b2c" && (
               <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "28px", marginBottom: "28px" }}>
                 <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>📤 UPLOAD YOUR AD DATA</div>
                 <div style={{ fontSize: "13px", color: C.muted, marginBottom: "24px" }}>Upload a CSV export from {profile.b2cPlatform} — AI will score and analyze every contact</div>
@@ -809,11 +811,11 @@ Return ONLY raw JSON:
             )}
 
             {/* SCANNING */}
-            {(scanning || csvProcessing) && (
+            {(scanning || csvProcessing) && safeMode === "b2b" && (
               <div style={{ textAlign: "center", padding: "60px" }}>
                 <div style={{ marginBottom: "20px" }}><LoadingDots color={accentColor} /></div>
                 <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "8px" }}>
-                  {mode === "b2b" ? `Hunting weak ${profile.targetIndustry} businesses in ${profile.location}...` : `Analyzing your ad data with AI...`}
+                  {mode === "b2b" ? `Hunting weak ${${profile.targetIndustry || "businesses"} in ${profile.location || "your area"}...` : `Analyzing your ad data with AI...`}
                 </div>
                 <div style={{ fontSize: "13px", color: C.dim }}>{scanProgress || csvProgress}</div>
               </div>
@@ -877,8 +879,8 @@ Return ONLY raw JSON:
                   const count = s === "all" ? savedLeads.length : savedLeads.filter(l => l.status === s).length;
                   const st = STATUS_OPTIONS.find(o => o.value === s);
                   return (
-                    <button key={s} onClick={() => setActiveTab(`saved_${s}`)}
-                      style={{ padding: "6px 14px", borderRadius: "20px", border: `1px solid ${C.border}`, background: "transparent", color: C.dim, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                    <button key={s} onClick={() => setSavedFilter(s)}
+                      style={{ padding: "6px 14px", borderRadius: "20px", border: `1px solid ${savedFilter === s ? C.b2bLight : C.border}`, background: savedFilter === s ? C.b2bGlow : "transparent", color: savedFilter === s ? C.b2bLight : C.dim, cursor: "pointer", fontSize: "12px", fontWeight: "600", transition: "all 0.2s" }}>
                       {s === "all" ? `All (${count})` : `${st?.label} (${count})`}
                     </button>
                   );
@@ -887,6 +889,12 @@ Return ONLY raw JSON:
               <button onClick={() => exportCSV(savedLeads)} style={{ padding: "7px 16px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>📊 Export All CSV</button>
             </div>
 
+            {(() => {
+              const filtered = savedFilter === "all" ? savedLeads : savedLeads.filter(l => l.status === savedFilter);
+              return filtered;
+            })().length === 0 && savedLeads.length > 0 ? (
+              <div style={{ textAlign: "center", padding: "40px", color: C.dim, fontSize: "14px" }}>No leads with this status yet</div>
+            ) : null}
             {savedLeads.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 24px" }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>💾</div>
@@ -896,7 +904,7 @@ Return ONLY raw JSON:
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px,1fr))", gap: "16px" }}>
-                {savedLeads.map((lead, i) => {
+                {(savedFilter === "all" ? savedLeads : savedLeads.filter(l => l.status === savedFilter)).map((lead, i) => {
                   const sc = scoreColor(lead.score);
                   return (
                     <SavedLeadCard key={i} lead={lead} sc={sc} mode={lead.mode || mode} accentColor={accentColor}
