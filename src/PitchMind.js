@@ -269,7 +269,7 @@ export default function PitchMind() {
     try {
       const prompt = `You are PitchMind AI. Generate exactly 6 HOT business leads as a JSON array.
 MY BUSINESS: ${profile.businessName}. WHAT I OFFER: ${profile.whatYouDo}.
-TARGET: ${${profile.targetIndustry || "businesses"} in ${profile.location || "your area"} that are CURRENTLY OPEN and WEAK in what I offer.
+TARGET: ${profile.targetIndustry || "businesses"} businesses in ${profile.location || "your area"} that are CURRENTLY OPEN and WEAK in what I offer.
 IMPORTANT: Return ONLY a valid JSON array. Start with [ end with ]. No markdown.
 [{"name":"Real Business Name","type":"${profile.targetIndustry}","location":"${profile.location}","address":"Real street address","phone":"Local phone","website":"No website","rating":2.8,"reviews":14,"score":88,"weaknesses":["No website","Low reviews","No social media"],"painPoint":"Why they need ${profile.businessName}.","hotReason":"Why HOT right now."}]
 Rules: 6 OPEN businesses, scores 75-95, realistic for ${profile.location}.`;
