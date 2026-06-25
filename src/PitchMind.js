@@ -6,7 +6,7 @@ import {
 } from "firebase/auth";
 import {
   doc, getDoc, setDoc, updateDoc, increment,
-  collection, addDoc, getDocs, deleteDoc, query, where, orderBy,
+  collection, addDoc, getDocs, deleteDoc, query, where,
 } from "firebase/firestore";
 
 // ── Translations ─────────────────────────────────────────────────────────────
@@ -292,7 +292,10 @@ export default function PitchMind() {
           const key = localStorage.getItem("pm_api_key") || "";
           if (!key) setScreen("apikey");
           else if (!data.profile?.businessName) setScreen("profile");
-          else { setScreen("dashboard"); loadSavedLeads(u.uid); }
+          else { 
+            setScreen("dashboard"); 
+            await loadSavedLeads(u.uid);
+          }
         } else { setScreen("plan"); }
       } else { setUser(null); setUserData(null); setScreen("login"); }
       setAuthLoading(false);
@@ -302,10 +305,27 @@ export default function PitchMind() {
 
   const loadSavedLeads = async (uid) => {
     try {
-      const q = query(collection(db, "leads"), where("userId", "==", uid), orderBy("savedAt", "desc"));
+      // Simple query without orderBy to avoid needing Firestore index
+      const q = query(collection(db, "leads"), where("userId", "==", uid));
       const snap = await getDocs(q);
-      setSavedLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (e) { console.log(e); }
+      const leads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Sort client-side by savedAt descending
+      leads.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
+      setSavedLeads(leads);
+      console.log("Loaded", leads.length, "saved leads");
+    } catch (e) { 
+      console.log("Error loading leads:", e);
+      // Try without any filter as fallback
+      try {
+        const snap2 = await getDocs(collection(db, "leads"));
+        const allLeads = snap2.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(l => l.userId === uid)
+          .sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
+        setSavedLeads(allLeads);
+        console.log("Fallback loaded", allLeads.length, "leads");
+      } catch(e2) { console.log("Fallback failed:", e2); }
+    }
   };
 
   const saveLead = async (lead) => {
@@ -656,7 +676,7 @@ Return ONLY raw JSON:
         {/* Tabs */}
         <div style={S.tabs}>
           <button style={{...S.tab,...(activeTab==="scan"?S.tabActive:{})}} onClick={()=>setActiveTab("scan")}>🔍 {t.scanNew}</button>
-          <button style={{...S.tab,...(activeTab==="saved"?S.tabActive:{})}} onClick={()=>setActiveTab("saved")}>
+          <button style={{...S.tab,...(activeTab==="saved"?S.tabActive:{})}} onClick={()=>{setActiveTab("saved"); if(user) loadSavedLeads(user.uid);}}>
             💾 {t.savedLeads} {savedLeads.length>0&&`(${savedLeads.length})`}
           </button>
         </div>
@@ -727,20 +747,7 @@ Return ONLY raw JSON:
                           )}
                           <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
                           {lead.rating&&<div style={{fontSize:"11px",color:"#f59e0b",marginTop:"2px"}}>⭐ {lead.rating}/5 ({lead.reviews} {lang==="ar"?"تقييم":"reviews"})</div>}
-                          <div style={{display:"flex",gap:"5px",marginTop:"8px",flexWrap:"wrap"}}>
-                            <a href={"https://www.instagram.com/explore/search/keyword/?q="+encodeURIComponent(lead.name+" "+lead.location)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.6)",background:"rgba(225,48,108,0.1)",border:"1px solid rgba(225,48,108,0.25)",borderRadius:"6px",padding:"3px 8px",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"4px",fontWeight:"600"}}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                              Instagram
-                            </a>
-                            <a href={"https://www.facebook.com/search/top/?q="+encodeURIComponent(lead.name+" "+lead.location)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.6)",background:"rgba(24,119,242,0.1)",border:"1px solid rgba(24,119,242,0.25)",borderRadius:"6px",padding:"3px 8px",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"4px",fontWeight:"600"}}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                              Facebook
-                            </a>
-                            <a href={"https://www.google.com/maps/search/"+encodeURIComponent(lead.name+" "+lead.address)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.6)",background:"rgba(66,133,244,0.1)",border:"1px solid rgba(66,133,244,0.25)",borderRadius:"6px",padding:"3px 8px",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"4px",fontWeight:"600"}}>
-                              <svg width="10" height="10" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                              Google Maps
-                            </a>
-                          </div>
+
                         </div>
                         {lead.weaknesses&&<div style={{marginBottom:"8px"}}>{lead.weaknesses.map((w,j)=><span key={j} style={{...S.weakTag,background:"rgba(239,68,68,0.12)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.25)"}}>⚠ {w}</span>)}</div>}
                         <div style={S.lPain}>{lead.painPoint}</div>
@@ -785,7 +792,10 @@ Return ONLY raw JSON:
           <>
             {/* Export + Filter */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"10px"}}>
-              <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center"}}>
+                <button onClick={()=>{ if(user) loadSavedLeads(user.uid); }} style={{padding:"6px 12px",borderRadius:"8px",border:"1px solid rgba(201,168,76,0.4)",background:"rgba(201,168,76,0.08)",color:"#C9A84C",cursor:"pointer",fontSize:"12px",fontWeight:"700",display:"flex",alignItems:"center",gap:"4px"}}>
+                  🔄 Refresh
+                </button>
                 <button onClick={()=>setStatusFilter("all")} style={{padding:"6px 14px",borderRadius:"20px",border:`1px solid ${statusFilter==="all"?"#C9A84C":"rgba(201,168,76,0.3)"}`,background:statusFilter==="all"?"rgba(201,168,76,0.2)":"transparent",color:statusFilter==="all"?"#C9A84C":"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:"12px",fontWeight:"600"}}>
                   {t.all} ({savedLeads.length})
                 </button>
@@ -835,20 +845,7 @@ Return ONLY raw JSON:
                           )}
                         <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
                         {lead.rating&&<div style={{fontSize:"11px",color:"#f59e0b",marginTop:"2px"}}>⭐ {lead.rating}/5 ({lead.reviews} {lang==="ar"?"تقييم":"reviews"})</div>}
-                        <div style={{display:"flex",gap:"5px",marginTop:"8px",flexWrap:"wrap"}}>
-                          <a href={"https://www.instagram.com/explore/search/keyword/?q="+encodeURIComponent(lead.name+" "+lead.location)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.6)",background:"rgba(225,48,108,0.1)",border:"1px solid rgba(225,48,108,0.25)",borderRadius:"6px",padding:"3px 8px",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"4px",fontWeight:"600"}}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                            Instagram
-                          </a>
-                          <a href={"https://www.facebook.com/search/top/?q="+encodeURIComponent(lead.name+" "+lead.location)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.6)",background:"rgba(24,119,242,0.1)",border:"1px solid rgba(24,119,242,0.25)",borderRadius:"6px",padding:"3px 8px",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"4px",fontWeight:"600"}}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                            Facebook
-                          </a>
-                          <a href={"https://www.google.com/maps/search/"+encodeURIComponent(lead.name+" "+lead.address)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.6)",background:"rgba(66,133,244,0.1)",border:"1px solid rgba(66,133,244,0.25)",borderRadius:"6px",padding:"3px 8px",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:"4px",fontWeight:"600"}}>
-                            <svg width="10" height="10" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                            Google Maps
-                          </a>
-                        </div>
+
                       </div>
                       {/* Status */}
                       <div style={{marginBottom:"10px"}}>
