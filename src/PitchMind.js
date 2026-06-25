@@ -815,7 +815,7 @@ Return ONLY raw JSON:
               <div style={{ textAlign: "center", padding: "60px" }}>
                 <div style={{ marginBottom: "20px" }}><LoadingDots color={accentColor} /></div>
                 <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "8px" }}>
-                  {mode === "b2b" ? `Hunting weak ${${profile.targetIndustry || "businesses"} in ${profile.location || "your area"}...` : `Analyzing your ad data with AI...`}
+                  {mode === "b2b" ? `Hunting weak ${profile.targetIndustry || "businesses"} in ${profile.location || "your area"}...` : `Analyzing your ad data with AI...`}
                 </div>
                 <div style={{ fontSize: "13px", color: C.dim }}>{scanProgress || csvProgress}</div>
               </div>
