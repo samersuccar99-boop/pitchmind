@@ -62,7 +62,7 @@ const T = {
     connectAI: "ربط الذكاء الاصطناعي", continue: "متابعة →",
     tellUs: "أخبرنا عن عملك", findLeads: "ابحث عن عملائي →",
     businessName: "اسم شركتك", whatYouOffer: "ما تقدمه من خدمات",
-    targetIndustry: "القطاع المستهدف", targetLocation: "الموقع المستهدف",
+    targetIndustry: "القطاع المستهدف", targetLocation: "النطاق الجغرافي المستهدف",
     scanNew: "بحث جديد", savedLeads: "عملائي المحفوظون",
     scanNow: "ابحث الآن →", scanning: "جاري البحث...",
     getReport: "احصل على استراتيجية البيع →", viewReport: "عرض التقرير 📋",
@@ -382,12 +382,7 @@ export default function PitchMind() {
     const ok = await useCredit();
     if (!ok) { setSearchErr(t.noCredits); setSearching(false); return; }
     try {
-      const prompt = `You are PitchMind AI. Generate 6 HOT leads.
-MY BUSINESS: ${profile.businessName}
-WHAT I OFFER: ${profile.whatYouDo}
-TARGET: ${profile.targetIndustry} in ${profile.location} WEAK in what I offer.
-Return ONLY raw JSON array:
-[{"name":"Business name","type":"${profile.targetIndustry}","location":"${profile.location}","address":"Real address","phone":"Local phone","website":"weak URL or 'No website'","rating":3.2,"reviews":18,"score":88,"weaknesses":["No social media","Poor website"],"painPoint":"Why they need ${profile.businessName}.","hotReason":"Why HOT now."}]`;
+      const prompt = `You are PitchMind AI. Generate exactly 6 HOT business leads. IMPORTANT: Return ONLY a valid JSON array. Start with [ end with ]. Zero markdown, zero explanation, zero code fences. MY BUSINESS: ${profile.businessName}. WHAT I OFFER: ${profile.whatYouDo}. TARGET: Businesses in the ${profile.targetIndustry} industry in ${profile.location} that are weak in what I offer. JSON format: [{"name":"Real local business name","type":"${profile.targetIndustry}","location":"${profile.location}","address":"Real street address","phone":"Local phone number","website":"No website","rating":2.8,"reviews":14,"score":88,"weaknesses":["No website","Low reviews"],"painPoint":"Specific reason they need ${profile.businessName}.","hotReason":"Why they are HOT right now."}] - Generate 6 businesses, scores 75-95.`;
       const raw = await callClaude(apiKey, prompt, 2000);
       const parsed = safeJSON(raw);
       const leadsArr = Array.isArray(parsed) ? parsed : [];
