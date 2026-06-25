@@ -361,32 +361,8 @@ CSV HEADERS: ${headers.join(", ")}
 DATA (${sample.length} rows):
 ${summary}
 
-ANALYSIS INSTRUCTIONS based on data type:
-${csvType === "leads" ? 
-  "- This is LEAD ADS data with real individual contacts
-- Extract name, email, phone, location per person
-- Score based on: recency, completeness of info, any engagement signals
-- Generate highly personalized messages using their actual name" 
-  : csvType === "campaigns" ? 
-  "- This is CAMPAIGN PERFORMANCE data (not individual people)
-- Each row = one ad campaign
-- Analyze: cost per result, reach, engagement rate, results count
-- Lower cost per result + higher results = HOT campaign audience to retarget
-- Generate retargeting strategy per campaign
-- Name each lead after the campaign for clarity"
-  : csvType === "tiktok" ?
-  "- This is TIKTOK ADS data
-- Analyze video performance, engagement rates, audience behavior
-- Higher video completion rate = more interested audience
-- Generate TikTok-specific outreach strategies"
-  : csvType === "google" ?
-  "- This is GOOGLE ADS data
-- Analyze search terms, keywords, conversion rates
-- High intent keywords = HOT leads
-- Generate search-intent based outreach"
-  : "- Analyze whatever engagement signals are available
-- Score based on any available metrics
-- Generate relevant outreach strategies"}
+ANALYSIS INSTRUCTIONS:
+${csvType === "leads" ? "Extract real contacts. Score by engagement signals. Use actual names in messages." : csvType === "campaigns" ? "Campaign data: analyze cost per result and reach. Lower cost = HOT. Generate retargeting strategy per campaign." : csvType === "tiktok" ? "TikTok data: analyze video completion rates. Higher completion = more interested audience." : csvType === "google" ? "Google data: analyze search intent keywords. High intent = HOT leads." : "Analyze all available engagement signals and score accordingly."}
 
 Return ONLY a raw JSON array. Start with [ end with ]. No markdown, no explanation.
 Generate exactly ${Math.min(sample.length, 8)} objects, one per data row:
