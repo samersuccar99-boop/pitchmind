@@ -100,13 +100,13 @@ const T = {
 };
 
 const PLANS = {
-  starter: { name: "Starter", nameAr: "مبتدئ", price: 99, credits: 50, color: "#00ff88" },
-  growth: { name: "Growth", nameAr: "نمو", price: 199, credits: 150, color: "#00ff88" },
+  starter: { name: "Starter", nameAr: "مبتدئ", price: 99, credits: 50, color: "#C9A84C" },
+  growth: { name: "Growth", nameAr: "نمو", price: 199, credits: 150, color: "#C9A84C" },
   agency: { name: "Agency", nameAr: "وكالة", price: 399, credits: 400, color: "#006e3c" },
 };
 
 const STATUS_OPTIONS = [
-  { value: "new", en: "🆕 New", ar: "🆕 جديد", bg: "rgba(0,255,136,0.15)", color: "#00ff88" },
+  { value: "new", en: "🆕 New", ar: "🆕 جديد", bg: "rgba(201,168,76,0.15)", color: "#C9A84C" },
   { value: "contacted", en: "📞 Contacted", ar: "📞 تم التواصل", bg: "rgba(59,130,246,0.15)", color: "#3b82f6" },
   { value: "inprogress", en: "🤝 In Progress", ar: "🤝 قيد التنفيذ", bg: "rgba(245,158,11,0.15)", color: "#f59e0b" },
   { value: "closed", en: "✅ Closed", ar: "✅ مغلق", bg: "rgba(34,197,94,0.15)", color: "#22c55e" },
@@ -152,7 +152,7 @@ function exportToExcel(leads, lang) {
 // Export to PDF (simple HTML print)
 function exportToPDF(leads, businessName) {
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>PitchMind Leads - ${businessName}</title>
-  <style>body{font-family:Arial,sans-serif;padding:30px;color:#1a1a2e}h1{color:#008c4a;margin-bottom:5px}.lead{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid}.lead-name{font-size:18px;font-weight:bold;color:#1a1a2e}.score{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:bold;font-size:13px}.hot{background:#fee2e2;color:#dc2626}.warm{background:#fef3c7;color:#d97706}.cold{background:#dcfce7;color:#16a34a}.info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.info-item{background:#f8f7ff;padding:8px;border-radius:6px}.info-label{font-size:10px;color:#006e3c;font-weight:bold;text-transform:uppercase}.weak{display:inline-block;background:#fee2e2;color:#dc2626;border-radius:4px;padding:2px 6px;font-size:11px;margin:2px}.pain{color:#555;font-size:13px;margin-top:8px}@media print{.lead{page-break-inside:avoid}}</style>
+  <style>body{font-family:Arial,sans-serif;padding:30px;color:#1a1a2e}h1{color:#8B6914;margin-bottom:5px}.lead{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px;page-break-inside:avoid}.lead-name{font-size:18px;font-weight:bold;color:#1a1a2e}.score{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:bold;font-size:13px}.hot{background:#fee2e2;color:#dc2626}.warm{background:#fef3c7;color:#d97706}.cold{background:#dcfce7;color:#16a34a}.info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.info-item{background:#f8f7ff;padding:8px;border-radius:6px}.info-label{font-size:10px;color:#006e3c;font-weight:bold;text-transform:uppercase}.weak{display:inline-block;background:#fee2e2;color:#dc2626;border-radius:4px;padding:2px 6px;font-size:11px;margin:2px}.pain{color:#555;font-size:13px;margin-top:8px}@media print{.lead{page-break-inside:avoid}}</style>
   </head><body>
   <h1>PitchMind Lead Report</h1>
   <p style="color:#666;margin-bottom:24px">Business: <strong>${businessName}</strong> — Generated ${new Date().toLocaleDateString()}</p>
@@ -177,60 +177,60 @@ function exportToPDF(leads, businessName) {
 }
 
 const S = {
-  app: (rtl) => ({ fontFamily: "'Inter', sans-serif", background: "#050505", minHeight: "100vh", color: "#fff", direction: rtl?"rtl":"ltr" }),
+  app: (rtl) => ({ fontFamily: "'Inter', sans-serif", background: "linear-gradient(135deg, #111111 0%, #1a1a1a 50%, #141008 100%)", minHeight: "100vh", color: "#fff", direction: rtl?"rtl":"ltr" }),
   center: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "24px" },
-  card: { background: "rgba(0,255,136,0.03)", backdropFilter: "blur(30px)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: "20px", padding: "40px", maxWidth: "480px", width: "100%", textAlign: "center", boxShadow: "0 0 40px rgba(0,255,136,0.05), inset 0 1px 0 rgba(0,255,136,0.1)" },
-  logo: { fontSize: "30px", fontWeight: "800", background: "linear-gradient(135deg, #00ff88, #00ffcc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "6px", letterSpacing: "-1px", filter: "drop-shadow(0 0 10px rgba(0,255,136,0.6))" },
-  tag: { color: "#00ff88", fontSize: "12px", marginBottom: "28px", letterSpacing: "2px", textTransform: "uppercase" },
-  label: { display: "block", textAlign: "left", fontSize: "11px", fontWeight: "700", color: "#00ff88", marginBottom: "6px", letterSpacing: "0.5px", textTransform: "uppercase" },
-  inp: { width: "100%", padding: "12px 14px", background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box", marginBottom: "12px", transition: "all 0.2s" },
-  textarea: { width: "100%", padding: "12px 14px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(0,255,136,0.4)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box", marginBottom: "12px", resize: "vertical", minHeight: "70px", fontFamily: "inherit" },
-  btn: { width: "100%", padding: "13px", background: "linear-gradient(180deg, #00ff88 0%, #00cc6a 60%, #00995a 100%)", border: "none", borderRadius: "10px", color: "#000", fontSize: "14px", fontWeight: "800", cursor: "pointer", marginBottom: "10px", boxShadow: "0 6px 0 #006a3c, 0 8px 15px rgba(0,255,136,0.3)", transform: "translateY(0)", transition: "all 0.1s ease", letterSpacing: "0.5px" },
-  btnSm: { padding: "10px 24px", background: "linear-gradient(180deg, #00ff88 0%, #00cc6a 60%, #00995a 100%)", border: "none", borderRadius: "10px", color: "#000", fontSize: "13px", fontWeight: "800", cursor: "pointer", boxShadow: "0 5px 0 #006a3c, 0 7px 12px rgba(0,255,136,0.25)", transition: "all 0.1s ease", letterSpacing: "0.3px" },
-  btnGhost: { width: "100%", padding: "12px", background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.3)", borderRadius: "10px", color: "#00ff88", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.2s", boxShadow: "inset 0 1px 0 rgba(0,255,136,0.1)" },
-  btnOutline: { padding: "8px 16px", background: "transparent", border: "1px solid rgba(0,255,136,0.4)", borderRadius: "8px", color: "#00ff88", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
-  header: { padding: "16px 28px", borderBottom: "1px solid rgba(0,255,136,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 30px rgba(0,255,136,0.05)" },
-  hLogo: { fontSize: "20px", fontWeight: "800", background: "linear-gradient(135deg, #00ff88, #00ffcc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.5px" },
-  badge: { background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.4)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#00ff88", fontWeight: "700", boxShadow: "0 0 10px rgba(0,255,136,0.1)" },
+  card: { background: "rgba(201,168,76,0.03)", backdropFilter: "blur(30px)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "20px", padding: "40px", maxWidth: "480px", width: "100%", textAlign: "center", boxShadow: "0 0 40px rgba(201,168,76,0.05), inset 0 1px 0 rgba(201,168,76,0.1)" },
+  logo: { fontSize: "30px", fontWeight: "800", background: "linear-gradient(135deg, #C9A84C, #E8C96A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "6px", letterSpacing: "-1px", filter: "drop-shadow(0 0 4px rgba(201,168,76,0.3))" },
+  tag: { color: "#C9A84C", fontSize: "12px", marginBottom: "28px", letterSpacing: "2px", textTransform: "uppercase" },
+  label: { display: "block", textAlign: "left", fontSize: "11px", fontWeight: "700", color: "#C9A84C", marginBottom: "6px", letterSpacing: "0.5px", textTransform: "uppercase" },
+  inp: { width: "100%", padding: "12px 14px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box", marginBottom: "12px", transition: "all 0.2s" },
+  textarea: { width: "100%", padding: "12px 14px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(201,168,76,0.4)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box", marginBottom: "12px", resize: "vertical", minHeight: "70px", fontFamily: "inherit" },
+  btn: { width: "100%", padding: "13px", background: "linear-gradient(180deg, #F0D070 0%, #C9A84C 55%, #A67C20 100%)", border: "none", borderRadius: "10px", color: "#1a0f00", fontSize: "14px", fontWeight: "800", cursor: "pointer", marginBottom: "10px", boxShadow: "0 5px 0 #7A5810, 0 8px 20px rgba(201,168,76,0.2)", transition: "all 0.15s ease", letterSpacing: "0.5px" },
+  btnSm: { padding: "10px 24px", background: "linear-gradient(180deg, #E8C96A 0%, #C9A84C 60%, #A67C20 100%)", border: "none", borderRadius: "10px", color: "#1a1200", fontSize: "13px", fontWeight: "800", cursor: "pointer", boxShadow: "0 5px 0 #7A5C10, 0 7px 12px rgba(201,168,76,0.25)", transition: "all 0.1s ease", letterSpacing: "0.3px" },
+  btnGhost: { width: "100%", padding: "12px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#C9A84C", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.2s", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.1)" },
+  btnOutline: { padding: "8px 16px", background: "transparent", border: "1px solid rgba(201,168,76,0.4)", borderRadius: "8px", color: "#C9A84C", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  header: { padding: "16px 28px", borderBottom: "1px solid rgba(201,168,76,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 30px rgba(201,168,76,0.05)" },
+  hLogo: { fontSize: "20px", fontWeight: "800", background: "linear-gradient(135deg, #C9A84C, #E8C96A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.5px" },
+  badge: { background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#C9A84C", fontWeight: "700",  },
   main: { maxWidth: "1200px", margin: "0 auto", padding: "32px 24px" },
-  tabs: { display: "flex", gap: "8px", marginBottom: "28px", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(0,255,136,0.1)", borderRadius: "12px", padding: "6px" },
+  tabs: { display: "flex", gap: "8px", marginBottom: "28px", background: "rgba(0,0,0,0.5)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: "12px", padding: "6px" },
   tab: { flex: 1, padding: "10px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "600", background: "transparent", color: "rgba(255,255,255,0.4)", transition: "all 0.2s" },
-  tabActive: { background: "linear-gradient(180deg, #00ff88, #00cc6a)", color: "#000", fontWeight: "800", boxShadow: "0 4px 0 #006a3c, 0 6px 15px rgba(0,255,136,0.3)" },
-  profileBanner: { background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "16px", padding: "16px 20px", marginBottom: "28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", boxShadow: "inset 0 1px 0 rgba(0,255,136,0.08), 0 4px 20px rgba(0,0,0,0.3)" },
-  sCard: { background: "rgba(0,255,136,0.02)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "18px", padding: "24px", marginBottom: "28px", boxShadow: "0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,255,136,0.08)" },
+  tabActive: { background: "linear-gradient(180deg, #F0D070, #C9A84C)", color: "#1a0f00", fontWeight: "800", boxShadow: "0 4px 0 #7A5810, 0 5px 12px rgba(201,168,76,0.2)" },
+  profileBanner: { background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: "16px", padding: "16px 20px", marginBottom: "28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.08), 0 4px 20px rgba(0,0,0,0.3)" },
+  sCard: { background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: "18px", padding: "24px", marginBottom: "28px", boxShadow: "0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.08)" },
   statsRow: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "28px" },
-  statCard: { background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "14px", padding: "18px", textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(0,255,136,0.08)", transition: "all 0.2s" },
-  statNum: { fontSize: "26px", fontWeight: "800", background: "linear-gradient(135deg, #00ff88, #00ffcc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
-  statLbl: { fontSize: "11px", color: "#00ff88", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: "3px" },
+  statCard: { background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: "14px", padding: "18px", textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.08)", transition: "all 0.2s" },
+  statNum: { fontSize: "26px", fontWeight: "800", background: "linear-gradient(135deg, #C9A84C, #E8C96A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
+  statLbl: { fontSize: "11px", color: "#C9A84C", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: "3px" },
   leadsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px,1fr))", gap: "16px" },
-  lCard: { background: "rgba(0,10,5,0.8)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "14px", padding: "20px", transition: "all 0.25s ease", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" },
+  lCard: { background: "rgba(0,10,5,0.8)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "14px", padding: "20px", transition: "all 0.25s ease", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" },
   lName: { fontSize: "15px", fontWeight: "700", marginBottom: "2px" },
-  lSub: { fontSize: "11px", color: "#00ff88", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" },
+  lSub: { fontSize: "11px", color: "#C9A84C", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" },
   weakTag: { display: "inline-block", borderRadius: "6px", padding: "2px 7px", fontSize: "10px", fontWeight: "700", marginRight: "4px", marginBottom: "3px" },
   lPain: { fontSize: "12px", color: "rgba(255,255,255,0.65)", lineHeight: "1.55", margin: "10px 0 14px" },
-  vBtn: { width: "100%", padding: "10px", background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.25)", borderRadius: "8px", color: "#00ff88", fontSize: "12px", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "inset 0 1px 0 rgba(0,255,136,0.1)" },
+  vBtn: { width: "100%", padding: "10px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "8px", color: "#C9A84C", fontSize: "12px", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.1)" },
   overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" },
-  modal: { background: "rgba(5,10,5,0.98)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: "20px", padding: "36px", maxWidth: "740px", width: "100%", maxHeight: "88vh", overflowY: "auto", position: "relative", boxShadow: "0 0 60px rgba(0,255,136,0.1), 0 25px 50px rgba(0,0,0,0.8)" },
+  modal: { background: "rgba(5,10,5,0.98)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "20px", padding: "36px", maxWidth: "740px", width: "100%", maxHeight: "88vh", overflowY: "auto", position: "relative", boxShadow: "0 0 60px rgba(201,168,76,0.1), 0 25px 50px rgba(0,0,0,0.8)" },
   mClose: { position: "absolute", top: "16px", right: "16px", background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "8px", color: "#fff", width: "30px", height: "30px", cursor: "pointer", fontSize: "15px" },
-  mTitle: { fontSize: "10px", fontWeight: "700", color: "#00ff88", textTransform: "uppercase", letterSpacing: "2px", marginBottom: "8px", textShadow: "0 0 8px rgba(0,255,136,0.5)" },
-  mBox: { background: "rgba(0,255,136,0.02)", border: "1px solid rgba(0,255,136,0.1)", borderRadius: "10px", padding: "16px", fontSize: "13px", lineHeight: "1.85", color: "rgba(255,255,255,0.85)", marginBottom: "16px", whiteSpace: "pre-wrap", boxShadow: "inset 0 1px 0 rgba(0,255,136,0.05)" },
+  mTitle: { fontSize: "10px", fontWeight: "700", color: "#C9A84C", textTransform: "uppercase", letterSpacing: "2px", marginBottom: "8px",  },
+  mBox: { background: "rgba(201,168,76,0.02)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: "10px", padding: "16px", fontSize: "13px", lineHeight: "1.85", color: "rgba(255,255,255,0.85)", marginBottom: "16px", whiteSpace: "pre-wrap", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.05)" },
   infoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "20px" },
-  infoBox: { background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "8px", padding: "10px 12px", boxShadow: "inset 0 1px 0 rgba(0,255,136,0.08)" },
-  infoLbl: { fontSize: "9px", color: "#00ff88", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "3px" },
+  infoBox: { background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: "8px", padding: "10px 12px", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.08)" },
+  infoLbl: { fontSize: "9px", color: "#C9A84C", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "3px" },
   infoVal: { fontSize: "12px", color: "#fff", fontWeight: "500" },
-  dot: { display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#00ff88", margin: "0 4px", animation: "pulse 1.4s ease-in-out infinite", boxShadow: "0 0 8px rgba(0,255,136,0.8)" },
+  dot: { display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#C9A84C", margin: "0 4px", animation: "pulse 1.4s ease-in-out infinite",  },
   empty: { textAlign: "center", padding: "60px 24px", color: "rgba(255,255,255,0.4)" },
   err: { color: "#ef4444", fontSize: "12px", marginTop: "8px" },
   plansGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "24px" },
-  planCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: "16px", padding: "24px", textAlign: "center", cursor: "pointer", transition: "all 0.2s", position: "relative" },
-  planCardActive: { background: "rgba(0,255,136,0.15)", border: "2px solid #00ff88" },
+  planCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "16px", padding: "24px", textAlign: "center", cursor: "pointer", transition: "all 0.2s", position: "relative" },
+  planCardActive: { background: "rgba(201,168,76,0.15)", border: "2px solid #C9A84C" },
   creditBar: { background: "rgba(255,255,255,0.06)", borderRadius: "8px", height: "6px", overflow: "hidden", marginTop: "6px" },
-  creditFill: { height: "100%", borderRadius: "8px", background: "linear-gradient(90deg, #00ff88, #00ffcc)", transition: "width 0.5s ease", boxShadow: "0 0 8px rgba(0,255,136,0.6)" },
-  noteArea: { width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(0,255,136,0.3)", borderRadius: "8px", color: "#fff", fontSize: "12px", outline: "none", boxSizing: "border-box", resize: "vertical", minHeight: "60px", fontFamily: "inherit", marginTop: "8px" },
+  creditFill: { height: "100%", borderRadius: "8px", background: "linear-gradient(90deg, #C9A84C, #E8C96A)", transition: "width 0.5s ease",  },
+  noteArea: { width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "8px", color: "#fff", fontSize: "12px", outline: "none", boxSizing: "border-box", resize: "vertical", minHeight: "60px", fontFamily: "inherit", marginTop: "8px" },
   // Pricing page
   pricingHero: { textAlign: "center", marginBottom: "48px" },
-  pricingCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: "20px", padding: "32px", textAlign: "center", position: "relative", transition: "all 0.2s" },
-  pricingCardPop: { background: "rgba(0,255,136,0.12)", border: "2px solid #00ff88", transform: "scale(1.03)" },
+  pricingCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "20px", padding: "32px", textAlign: "center", position: "relative", transition: "all 0.2s" },
+  pricingCardPop: { background: "rgba(201,168,76,0.12)", border: "2px solid #C9A84C", transform: "scale(1.03)" },
   featureList: { listStyle: "none", textAlign: "left", marginBottom: "24px" },
   featureItem: { fontSize: "13px", color: "rgba(255,255,255,0.75)", marginBottom: "8px", display: "flex", alignItems: "center", gap: "8px" },
 };
@@ -263,18 +263,18 @@ export default function PitchMind() {
 
   const CSS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-  @keyframes glow{0%,100%{box-shadow:0 0 10px rgba(0,255,136,0.3),0 0 20px rgba(0,255,136,0.1)}50%{box-shadow:0 0 20px rgba(0,255,136,0.6),0 0 40px rgba(0,255,136,0.2)}}
+  @keyframes glow{0%,100%{box-shadow:0 0 10px rgba(201,168,76,0.3),0 0 20px rgba(201,168,76,0.1)}50%{box-shadow:0 0 20px rgba(201,168,76,0.6),0 0 40px rgba(201,168,76,0.2)}}
   @keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
   @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes borderGlow{0%,100%{border-color:rgba(0,255,136,0.3)}50%{border-color:rgba(0,255,136,0.8)}}
+  @keyframes borderGlow{0%,100%{border-color:rgba(201,168,76,0.3)}50%{border-color:rgba(201,168,76,0.8)}}
   @keyframes numberPop{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
   *{box-sizing:border-box;margin:0;padding:0}
   ::-webkit-scrollbar{width:5px}
-  ::-webkit-scrollbar-track{background:#0a0a0a}
-  ::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.4);border-radius:3px}
-  ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,136,0.7)}
+  ::-webkit-scrollbar-track{background:#1a1a1a}
+  ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.4);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(201,168,76,0.7)}
   input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2)}
-  input:focus,textarea:focus{border-color:rgba(0,255,136,0.7)!important;box-shadow:0 0 0 3px rgba(0,255,136,0.1)!important}
+  input:focus,textarea:focus{border-color:rgba(201,168,76,0.7)!important;box-shadow:0 0 0 3px rgba(201,168,76,0.1)!important}
   button:active{transform:scale(0.97)!important}
   .lead-card:hover{transform:translateY(-2px);transition:all 0.2s ease}
   `;
@@ -431,7 +431,7 @@ Return ONLY raw JSON:
 
   // Lang toggle button
   const LangBtn = () => (
-    <button onClick={toggleLang} style={{ background: "rgba(0,255,136,0.15)", border: "1px solid rgba(0,255,136,0.3)", borderRadius: "8px", color: "#00ff88", padding: "5px 10px", cursor: "pointer", fontSize: "12px", fontWeight: "700" }}>
+    <button onClick={toggleLang} style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "8px", color: "#C9A84C", padding: "5px 10px", cursor: "pointer", fontSize: "12px", fontWeight: "700" }}>
       {lang === "en" ? "🇸🇦 العربية" : "🇬🇧 English"}
     </button>
   );
@@ -479,7 +479,7 @@ Return ONLY raw JSON:
       <div style={S.plansGrid}>
         {Object.entries(PLANS).map(([key,plan])=>(
           <div key={key} style={{...S.planCard,...(selectedPlan===key?S.planCardActive:{})}} onClick={()=>setSelectedPlan(key)}>
-            {key==="growth"&&<div style={{position:"absolute",top:"-10px",left:"50%",transform:"translateX(-50%)",background:"#00ff88",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"3px 10px",borderRadius:"10px"}}>{t.mostPopular}</div>}
+            {key==="growth"&&<div style={{position:"absolute",top:"-10px",left:"50%",transform:"translateX(-50%)",background:"#C9A84C",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"3px 10px",borderRadius:"10px"}}>{t.mostPopular}</div>}
             <div style={{fontSize:"18px",fontWeight:"800",color:plan.color,marginBottom:"4px"}}>${plan.price}</div>
             <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)",marginBottom:"12px"}}>{t.perMonth}</div>
             <div style={{fontSize:"15px",fontWeight:"700",marginBottom:"8px"}}>{lang==="ar"?plan.nameAr:plan.name}</div>
@@ -501,8 +501,8 @@ Return ONLY raw JSON:
   if (screen === "apikey") return (
     <div style={S.app(rtl)}><style>{CSS}</style><div style={S.center}><div style={S.card}>
       <div style={S.logo}>PitchMind</div><div style={S.tag}>{t.connectAI}</div>
-      <div style={{background:"rgba(0,255,136,0.08)",border:"1px solid rgba(0,255,136,0.2)",borderRadius:"10px",padding:"12px 14px",marginBottom:"20px",fontSize:"12px",color:"rgba(255,255,255,0.6)",lineHeight:"1.6",textAlign:"left"}}>
-        🔑 {lang==="ar"?"احصل على مفتاحك المجاني من":"Get your free API key at"} <span style={{color:"#00ff88"}}>console.anthropic.com</span>
+      <div style={{background:"rgba(201,168,76,0.08)",border:"1px solid rgba(201,168,76,0.2)",borderRadius:"10px",padding:"12px 14px",marginBottom:"20px",fontSize:"12px",color:"rgba(255,255,255,0.6)",lineHeight:"1.6",textAlign:"left"}}>
+        🔑 {lang==="ar"?"احصل على مفتاحك المجاني من":"Get your free API key at"} <span style={{color:"#C9A84C"}}>console.anthropic.com</span>
       </div>
       <label style={S.label}>Claude API Key</label>
       <input style={S.inp} type="password" placeholder="sk-ant-..." value={apiKeyInput} onChange={e=>{setApiKeyInput(e.target.value);setAuthErr("");}} onKeyDown={e=>e.key==="Enter"&&handleApiKey()} />
@@ -534,7 +534,7 @@ Return ONLY raw JSON:
   if (screen === "pricing") return (
     <div style={S.app(rtl)}><style>{CSS}</style>
       <div style={S.header}>
-        <div style={S.hLogo}>PitchMind</div>
+        <div style={{...S.hLogo, cursor:"pointer"}} onClick={()=>setScreen("dashboard")}>PitchMind</div>
         <div style={{display:"flex",gap:"10px",alignItems:"center"}}>
           <LangBtn />
           <button onClick={()=>setScreen("dashboard")} style={{...S.btnOutline}}>← {lang==="ar"?"رجوع":"Back"}</button>
@@ -545,7 +545,7 @@ Return ONLY raw JSON:
           <div style={{fontSize:"36px",fontWeight:"800",marginBottom:"12px",letterSpacing:"-1px"}}>
             {lang==="ar"?"خطط PitchMind":"PitchMind Plans"}
           </div>
-          <div style={{color:"#00ff88",fontSize:"16px"}}>
+          <div style={{color:"#C9A84C",fontSize:"16px"}}>
             {lang==="ar"?"اختر الخطة المناسبة لعملك":"Choose the plan that fits your business"}
           </div>
         </div>
@@ -561,16 +561,16 @@ Return ONLY raw JSON:
             ];
             return (
               <div key={key} style={{...S.pricingCard,...(isPopular?S.pricingCardPop:{})}}>
-                {isPopular&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#008c4a,#00ff88)",color:"#fff",fontSize:"11px",fontWeight:"700",padding:"4px 14px",borderRadius:"12px"}}>{t.mostPopular}</div>}
+                {isPopular&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#8B6914,#C9A84C)",color:"#fff",fontSize:"11px",fontWeight:"700",padding:"4px 14px",borderRadius:"12px"}}>{t.mostPopular}</div>}
                 <div style={{fontSize:"32px",fontWeight:"800",color:plan.color,marginBottom:"4px"}}>${plan.price}</div>
                 <div style={{fontSize:"12px",color:"rgba(255,255,255,0.4)",marginBottom:"16px"}}>{t.billedMonthly}</div>
                 <div style={{fontSize:"20px",fontWeight:"800",marginBottom:"6px"}}>{lang==="ar"?plan.nameAr:plan.name}</div>
                 <div style={{fontSize:"12px",color:"rgba(255,255,255,0.5)",marginBottom:"24px"}}>{key==="starter"?t.planDesc1:key==="growth"?t.planDesc2:t.planDesc3}</div>
                 <ul style={S.featureList}>
-                  {features.map((f,i)=><li key={i} style={S.featureItem}><span style={{color:"#00ff88",fontWeight:"700"}}>✓</span>{f}</li>)}
+                  {features.map((f,i)=><li key={i} style={S.featureItem}><span style={{color:"#C9A84C",fontWeight:"700"}}>✓</span>{f}</li>)}
                 </ul>
                 {isCurrent?(
-                  <div style={{padding:"12px",background:"rgba(0,255,136,0.15)",border:"1px solid rgba(0,255,136,0.3)",borderRadius:"10px",color:"#00ff88",fontWeight:"600",fontSize:"13px"}}>{t.currentPlan} ✅</div>
+                  <div style={{padding:"12px",background:"rgba(201,168,76,0.15)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:"10px",color:"#C9A84C",fontWeight:"600",fontSize:"13px"}}>{t.currentPlan} ✅</div>
                 ):(
                   <div style={{padding:"12px",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"10px",color:"rgba(255,255,255,0.5)",fontSize:"13px",textAlign:"center"}}>
                     {lang==="ar"?"قريباً — سيتوفر الدفع قريباً":"Coming Soon — Payment integration coming soon"}
@@ -582,7 +582,7 @@ Return ONLY raw JSON:
           })}
         </div>
         <div style={{textAlign:"center",marginTop:"32px",color:"rgba(255,255,255,0.4)",fontSize:"13px"}}>
-          {lang==="ar"?"للترقية أو الاستفسار تواصل معنا على:":"To upgrade or inquire, contact us at:"} <span style={{color:"#00ff88"}}>billing@pitchmind.ai</span>
+          {lang==="ar"?"للترقية أو الاستفسار تواصل معنا على:":"To upgrade or inquire, contact us at:"} <span style={{color:"#C9A84C"}}>billing@pitchmind.ai</span>
         </div>
       </div>
     </div>
@@ -601,14 +601,14 @@ Return ONLY raw JSON:
       <div style={S.header}>
         <div style={S.hLogo}>PitchMind</div>
         <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
-          <div style={{background:"rgba(0,255,136,0.15)",border:"1px solid rgba(0,255,136,0.3)",borderRadius:"10px",padding:"6px 12px",fontSize:"12px"}}>
-            <span style={{color:"#00ff88",fontWeight:"700"}}>{userData?.credits||0}</span>
+          <div style={{background:"rgba(201,168,76,0.15)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:"10px",padding:"6px 12px",fontSize:"12px"}}>
+            <span style={{color:"#C9A84C",fontWeight:"700"}}>{userData?.credits||0}</span>
             <span style={{color:"rgba(255,255,255,0.4)"}}> / {userData?.maxCredits||0} {t.creditsLeft}</span>
           </div>
           <div style={S.badge}>{lang==="ar"?plan.nameAr:plan.name}</div>
           <LangBtn />
           <button onClick={()=>setScreen("pricing")} style={{...S.btnOutline,fontSize:"11px",padding:"5px 10px"}}>{t.pricing}</button>
-          <button onClick={()=>setScreen("profile")} style={{background:"rgba(0,255,136,0.15)",border:"1px solid rgba(0,255,136,0.3)",borderRadius:"8px",color:"#00ff88",padding:"5px 10px",cursor:"pointer",fontSize:"11px"}}>{t.editProfile}</button>
+          <button onClick={()=>setScreen("profile")} style={{background:"rgba(201,168,76,0.15)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:"8px",color:"#C9A84C",padding:"5px 10px",cursor:"pointer",fontSize:"11px"}}>{t.editProfile}</button>
           <button onClick={handleLogout} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"8px",color:"rgba(255,255,255,0.4)",padding:"5px 10px",cursor:"pointer",fontSize:"11px"}}>{t.logout}</button>
         </div>
       </div>
@@ -634,7 +634,7 @@ Return ONLY raw JSON:
             <div style={{fontSize:"12px",color:"rgba(255,255,255,0.5)"}}>{profile.whatYouDo?.substring(0,80)}...</div>
           </div>
           <div style={{textAlign:rtl?"left":"right"}}>
-            <div style={{fontSize:"12px",color:"#00ff88",fontWeight:"600"}}>{t.targetIndustry}: {profile.targetIndustry}</div>
+            <div style={{fontSize:"12px",color:"#C9A84C",fontWeight:"600"}}>{t.targetIndustry}: {profile.targetIndustry}</div>
             <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)"}}>📍 {profile.location}</div>
             <div style={{marginTop:"6px"}}>
               <div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",marginBottom:"3px"}}>{userData?.credits}/{userData?.maxCredits} {t.creditsLeft}</div>
@@ -665,7 +665,7 @@ Return ONLY raw JSON:
         {activeTab==="scan"&&(
           <>
             <div style={S.sCard}>
-              <div style={{fontSize:"12px",fontWeight:"700",color:"#00ff88",marginBottom:"16px",textTransform:"uppercase",letterSpacing:"1px"}}>
+              <div style={{fontSize:"12px",fontWeight:"700",color:"#C9A84C",marginBottom:"16px",textTransform:"uppercase",letterSpacing:"1px"}}>
                 🔍 {t.scanNew} <span style={{color:"rgba(255,255,255,0.3)",fontWeight:"400",textTransform:"none",fontSize:"11px"}}>— {t.perScan}</span>
               </div>
               <div style={{display:"flex",gap:"12px",alignItems:"flex-end",flexWrap:"wrap"}}>
@@ -688,14 +688,14 @@ Return ONLY raw JSON:
                   <button onClick={()=>exportToPDF(savedLeads,profile.businessName)} style={{...S.btnOutline,display:"flex",alignItems:"center",gap:"6px"}}>📄 {t.exportPDF}</button>
                 </div>
               )}
-              {progress&&<div style={{marginTop:"12px",fontSize:"12px",color:"#00ff88"}}>{progress}</div>}
+              {progress&&<div style={{marginTop:"12px",fontSize:"12px",color:"#C9A84C"}}>{progress}</div>}
               {searchErr&&<div style={S.err}>{searchErr}</div>}
             </div>
 
             {searching&&(
               <div style={{textAlign:"center",padding:"50px"}}>
                 <div style={{marginBottom:"12px"}}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{...S.dot,animationDelay:`${d}s`}}/>)}</div>
-                <div style={{color:"#00ff88",fontSize:"14px",fontWeight:"600"}}>{t.huntingLeads}</div>
+                <div style={{color:"#C9A84C",fontSize:"14px",fontWeight:"600"}}>{t.huntingLeads}</div>
               </div>
             )}
 
@@ -708,8 +708,8 @@ Return ONLY raw JSON:
                     const saved=savedLeads.find(s=>s.name===lead.name);
                     return (
                       <div key={i} style={S.lCard}
-                        onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,255,136,0.4)";e.currentTarget.style.background="rgba(0,255,136,0.04)";e.currentTarget.style.boxShadow="0 0 20px rgba(0,255,136,0.1), 0 8px 30px rgba(0,0,0,0.5)";e.currentTarget.style.transform="translateY(-2px)";}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,255,136,0.12)";e.currentTarget.style.background="rgba(0,10,5,0.8)";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.4)";e.currentTarget.style.transform="translateY(0)";}}>
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(201,168,76,0.4)";e.currentTarget.style.background="rgba(201,168,76,0.04)";e.currentTarget.style.boxShadow="0 0 20px rgba(201,168,76,0.1), 0 8px 30px rgba(0,0,0,0.5)";e.currentTarget.style.transform="translateY(-2px)";}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(201,168,76,0.12)";e.currentTarget.style.background="rgba(0,10,5,0.8)";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.4)";e.currentTarget.style.transform="translateY(0)";}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
                           <div style={{flex:1,paddingRight:"8px"}}><div style={S.lName}>{lead.name}</div><div style={S.lSub}>{lead.type} · {lead.location}</div></div>
                           <div style={{background:sc.bg,color:sc.color,border:`1px solid ${sc.border}`,borderRadius:"8px",padding:"3px 8px",fontSize:"11px",fontWeight:"800",flexShrink:0,textAlign:"center"}}>
@@ -718,7 +718,7 @@ Return ONLY raw JSON:
                         </div>
                         <div style={{marginBottom:"8px"}}>
                           {lead.phone&&<div style={{fontSize:"11px",color:"rgba(255,255,255,0.55)",marginBottom:"2px"}}>📞 {lead.phone}</div>}
-                          <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#00ff88",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#C9A84C",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                             🌐 {lead.website==="No website"?"❌ No website":lead.website.replace(/https?:\/\//,"")}
                           </div>
                           <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
@@ -728,8 +728,8 @@ Return ONLY raw JSON:
                         <div style={S.lPain}>{lead.painPoint}</div>
                         {saved&&<div style={{fontSize:"10px",color:"#22c55e",marginBottom:"8px"}}>✅ {t.autoSaved}</div>}
                         <button style={S.vBtn} onClick={()=>loadReport(saved||lead)}
-                          onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,204,106,0.35)";e.currentTarget.style.color="#fff";}}
-                          onMouseLeave={e=>{e.currentTarget.style.background="rgba(0,204,106,0.2)";e.currentTarget.style.color="#00ff88";}}>
+                          onMouseEnter={e=>{e.currentTarget.style.background="rgba(184,147,42,0.35)";e.currentTarget.style.color="#fff";}}
+                          onMouseLeave={e=>{e.currentTarget.style.background="rgba(184,147,42,0.2)";e.currentTarget.style.color="#C9A84C";}}>
                           {t.getReport} <span style={{opacity:0.5,fontSize:"10px"}}>{t.oneCredit}</span>
                         </button>
                       </div>
@@ -755,7 +755,7 @@ Return ONLY raw JSON:
             {/* Export + Filter */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"10px"}}>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                <button onClick={()=>setStatusFilter("all")} style={{padding:"6px 14px",borderRadius:"20px",border:`1px solid ${statusFilter==="all"?"#00ff88":"rgba(0,255,136,0.3)"}`,background:statusFilter==="all"?"rgba(0,255,136,0.2)":"transparent",color:statusFilter==="all"?"#00ff88":"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:"12px",fontWeight:"600"}}>
+                <button onClick={()=>setStatusFilter("all")} style={{padding:"6px 14px",borderRadius:"20px",border:`1px solid ${statusFilter==="all"?"#C9A84C":"rgba(201,168,76,0.3)"}`,background:statusFilter==="all"?"rgba(201,168,76,0.2)":"transparent",color:statusFilter==="all"?"#C9A84C":"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:"12px",fontWeight:"600"}}>
                   {t.all} ({savedLeads.length})
                 </button>
                 {STATUS_OPTIONS.map(s=>(
@@ -783,7 +783,7 @@ Return ONLY raw JSON:
                 {filteredSaved.map((lead,i)=>{
                   const sc=scoreColor(lead.score);
                   return (
-                    <div key={i} style={{...S.lCard,borderColor:lead.status==="closed"?"rgba(34,197,94,0.3)":lead.status==="inprogress"?"rgba(245,158,11,0.3)":"rgba(0,255,136,0.2)"}}
+                    <div key={i} style={{...S.lCard,borderColor:lead.status==="closed"?"rgba(34,197,94,0.3)":lead.status==="inprogress"?"rgba(245,158,11,0.3)":"rgba(201,168,76,0.2)"}}
                       onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.07)";}}
                       onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.04)";}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
@@ -794,7 +794,7 @@ Return ONLY raw JSON:
                       </div>
                       <div style={{marginBottom:"8px"}}>
                         {lead.phone&&<div style={{fontSize:"11px",color:"rgba(255,255,255,0.55)",marginBottom:"2px"}}>📞 {lead.phone}</div>}
-                        <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#00ff88",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#C9A84C",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                           🌐 {lead.website==="No website"?"❌ No website":lead.website.replace(/https?:\/\//,"")}
                         </div>
                         <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
@@ -816,8 +816,8 @@ Return ONLY raw JSON:
                       <textarea style={S.noteArea} placeholder={t.addNotes} value={lead.notes||""} onChange={e=>updateLeadNotes(lead.id,e.target.value)} />
                       <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
                         <button style={{...S.vBtn,flex:1}} onClick={()=>loadReport(lead)}
-                          onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,204,106,0.35)";e.currentTarget.style.color="#fff";}}
-                          onMouseLeave={e=>{e.currentTarget.style.background="rgba(0,204,106,0.2)";e.currentTarget.style.color="#00ff88";}}>
+                          onMouseEnter={e=>{e.currentTarget.style.background="rgba(184,147,42,0.35)";e.currentTarget.style.color="#fff";}}
+                          onMouseLeave={e=>{e.currentTarget.style.background="rgba(184,147,42,0.2)";e.currentTarget.style.color="#C9A84C";}}>
                           {lead.report?t.viewReport:t.getReport}
                         </button>
                         <button onClick={()=>deleteLead(lead.id)} style={{padding:"9px 12px",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",color:"#ef4444",cursor:"pointer",fontSize:"12px"}}>🗑️</button>
@@ -838,7 +838,7 @@ Return ONLY raw JSON:
             <button style={S.mClose} onClick={()=>setSelectedLead(null)}>✕</button>
             <div style={{marginBottom:"20px"}}>
               <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"3px"}}>{selectedLead.name}</div>
-              <div style={{color:"#00ff88",fontSize:"12px",marginBottom:"14px"}}>{selectedLead.type} · {selectedLead.location}</div>
+              <div style={{color:"#C9A84C",fontSize:"12px",marginBottom:"14px"}}>{selectedLead.type} · {selectedLead.location}</div>
               {selectedLead.id&&(
                 <div style={{marginBottom:"14px"}}>
                   <div style={{fontSize:"10px",color:"rgba(255,255,255,0.4)",marginBottom:"6px",textTransform:"uppercase"}}>{t.status}</div>
@@ -855,7 +855,7 @@ Return ONLY raw JSON:
               <div style={S.infoGrid}>
                 <div style={S.infoBox}><div style={S.infoLbl}>📞 {t.phone}</div><div style={S.infoVal}>{selectedLead.phone}</div></div>
                 <div style={S.infoBox}><div style={S.infoLbl}>⭐ {t.rating}</div><div style={S.infoVal}>{selectedLead.rating}/5 ({selectedLead.reviews} {lang==="ar"?"تقييم":"reviews"})</div></div>
-                <div style={{...S.infoBox,gridColumn:"1/-1"}}><div style={S.infoLbl}>🌐 {t.website}</div><div style={{...S.infoVal,color:selectedLead.website==="No website"?"#ef4444":"#00ff88"}}>{selectedLead.website}</div></div>
+                <div style={{...S.infoBox,gridColumn:"1/-1"}}><div style={S.infoLbl}>🌐 {t.website}</div><div style={{...S.infoVal,color:selectedLead.website==="No website"?"#ef4444":"#C9A84C"}}>{selectedLead.website}</div></div>
                 <div style={{...S.infoBox,gridColumn:"1/-1"}}><div style={S.infoLbl}>📍 {t.address}</div><div style={S.infoVal}>{selectedLead.address}</div></div>
               </div>
               {selectedLead.weaknesses&&<div style={{marginBottom:"12px"}}>{selectedLead.weaknesses.map((w,i)=><span key={i} style={{...S.weakTag,background:"rgba(239,68,68,0.12)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.25)"}}>⚠ {w}</span>)}</div>}
@@ -869,7 +869,7 @@ Return ONLY raw JSON:
             {selectedLead.loading&&(
               <div style={{textAlign:"center",padding:"36px"}}>
                 <div style={{marginBottom:"10px"}}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{...S.dot,animationDelay:`${d}s`}}/>)}</div>
-                <div style={{color:"#00ff88",fontWeight:"600",fontSize:"13px"}}>{lang==="ar"?"جاري بناء استراتيجيتك...":"Building your pitch strategy..."}</div>
+                <div style={{color:"#C9A84C",fontWeight:"600",fontSize:"13px"}}>{lang==="ar"?"جاري بناء استراتيجيتك...":"Building your pitch strategy..."}</div>
               </div>
             )}
             {selectedLead.reportErr&&<div style={{color:"#ef4444",padding:"14px",background:"rgba(239,68,68,0.1)",borderRadius:"10px",fontSize:"12px",marginBottom:"16px"}}>{selectedLead.reportErr}</div>}
