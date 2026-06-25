@@ -189,7 +189,7 @@ const S = {
   btnSm: { padding: "10px 24px", background: "linear-gradient(180deg, #E8C96A 0%, #C9A84C 60%, #A67C20 100%)", border: "none", borderRadius: "10px", color: "#1a1200", fontSize: "13px", fontWeight: "800", cursor: "pointer", boxShadow: "0 5px 0 #7A5C10, 0 7px 12px rgba(201,168,76,0.25)", transition: "all 0.1s ease", letterSpacing: "0.3px" },
   btnGhost: { width: "100%", padding: "12px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "10px", color: "#C9A84C", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.2s", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.1)" },
   btnOutline: { padding: "8px 16px", background: "transparent", border: "1px solid rgba(201,168,76,0.4)", borderRadius: "8px", color: "#C9A84C", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
-  header: { padding: "18px 32px", borderBottom: "1px solid transparent", backgroundImage: "linear-gradient(rgba(15,12,5,0.97), rgba(15,12,5,0.97)), linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent)", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(10,8,2,0.95)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 1px 0 rgba(201,168,76,0.2), 0 4px 30px rgba(0,0,0,0.5)" },
+  header: { padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "linear-gradient(180deg, rgba(8,6,1,0.99) 0%, rgba(12,9,2,0.97) 100%)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, borderBottom: "2px solid transparent", backgroundClip: "padding-box", boxShadow: "0 2px 0 rgba(201,168,76,0.35), 0 4px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,168,76,0.08)" },
   hLogo: { fontSize: "22px", fontWeight: "900", background: "linear-gradient(135deg, #F0D070, #C9A84C, #E8C96A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "3px", textTransform: "uppercase" },
   badge: { background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.4)", borderRadius: "20px", padding: "4px 12px", fontSize: "11px", color: "#C9A84C", fontWeight: "700",  },
   main: { maxWidth: "1200px", margin: "0 auto", padding: "32px 24px" },
@@ -602,8 +602,8 @@ Return ONLY raw JSON:
         <div style={S.hLogo}>PitchMind</div>
         <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
           <div style={{background:"rgba(201,168,76,0.15)",border:"1px solid rgba(201,168,76,0.3)",borderRadius:"10px",padding:"6px 12px",fontSize:"12px"}}>
-            <span style={{color:"#C9A84C",fontWeight:"700"}}>{userData?.credits||0}</span>
-            <span style={{color:"rgba(255,255,255,0.4)"}}> / {userData?.maxCredits||0} {t.creditsLeft}</span>
+            <span style={{color:"#E8C96A",fontWeight:"900",fontSize:"14px"}}>{userData?.credits||0}</span>
+            <span style={{color:"rgba(255,255,255,0.3)",fontSize:"11px",letterSpacing:"0.5px"}}> / {userData?.maxCredits||0} CREDITS</span>
           </div>
           <div style={S.badge}>{lang==="ar"?plan.nameAr:plan.name}</div>
           <LangBtn />
@@ -630,12 +630,12 @@ Return ONLY raw JSON:
         {/* Profile Banner */}
         <div style={S.profileBanner}>
           <div>
-            <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>🏢 {profile.businessName}</div>
-            <div style={{fontSize:"12px",color:"rgba(255,255,255,0.5)"}}>{profile.whatYouDo?.substring(0,80)}...</div>
+            <div style={{fontSize:"16px",fontWeight:"900",marginBottom:"4px",letterSpacing:"1px",textTransform:"uppercase",color:"#E8C96A"}}>{profile.businessName}</div>
+            <div style={{fontSize:"11px",color:"rgba(255,255,255,0.45)",letterSpacing:"0.5px",textTransform:"uppercase",marginTop:"2px"}}>{profile.whatYouDo?.substring(0,70)}...</div>
           </div>
           <div style={{textAlign:rtl?"left":"right"}}>
-            <div style={{fontSize:"12px",color:"#C9A84C",fontWeight:"600"}}>{t.targetIndustry}: {profile.targetIndustry}</div>
-            <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)"}}>📍 {profile.location}</div>
+            <div style={{fontSize:"10px",color:"#C9A84C",fontWeight:"800",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"3px"}}>🎯 TARGET: {profile.targetIndustry?.toUpperCase()}</div>
+            <div style={{fontSize:"10px",color:"rgba(255,255,255,0.4)",letterSpacing:"1px",textTransform:"uppercase"}}>📍 {profile.location?.toUpperCase()}</div>
             <div style={{marginTop:"6px"}}>
               <div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",marginBottom:"3px"}}>{userData?.credits}/{userData?.maxCredits} {t.creditsLeft}</div>
               <div style={S.creditBar}><div style={{...S.creditFill,width:`${creditPct}%`}}/></div>
@@ -665,7 +665,7 @@ Return ONLY raw JSON:
         {activeTab==="scan"&&(
           <>
             <div style={S.sCard}>
-              <div style={{fontSize:"12px",fontWeight:"700",color:"#C9A84C",marginBottom:"16px",textTransform:"uppercase",letterSpacing:"1px"}}>
+              <div style={{fontSize:"11px",fontWeight:"800",color:"#C9A84C",marginBottom:"16px",textTransform:"uppercase",letterSpacing:"2px"}}>
                 🔍 {t.scanNew} <span style={{color:"rgba(255,255,255,0.3)",fontWeight:"400",textTransform:"none",fontSize:"11px"}}>— {t.perScan}</span>
               </div>
               <div style={{display:"flex",gap:"12px",alignItems:"flex-end",flexWrap:"wrap"}}>
@@ -740,10 +740,23 @@ Return ONLY raw JSON:
             )}
 
             {leads.length===0&&!searching&&(
-              <div style={S.empty}>
-                <div style={{fontSize:"48px",marginBottom:"12px"}}>🎯</div>
-                <div style={{fontSize:"18px",fontWeight:"700",color:"rgba(255,255,255,0.6)",marginBottom:"6px"}}>{t.readyToHunt}</div>
-                <div style={{fontSize:"13px"}}>{t.readyDesc}</div>
+              <div style={{textAlign:"center",padding:"60px 24px"}}>
+                <div style={{fontSize:"56px",marginBottom:"16px",filter:"grayscale(0.3)"}}>🎯</div>
+                <div style={{fontSize:"22px",fontWeight:"900",color:"#E8C96A",marginBottom:"8px",letterSpacing:"2px",textTransform:"uppercase"}}>READY TO HUNT?</div>
+                <div style={{fontSize:"13px",color:"rgba(255,255,255,0.4)",marginBottom:"40px",letterSpacing:"0.5px"}}>Enter your target industry & location above to find your next client</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"16px",maxWidth:"600px",margin:"0 auto"}}>
+                  {[
+                    {icon:"🔍",title:"SMART SEARCH",desc:"AI finds businesses weak in what you offer"},
+                    {icon:"🧠",title:"DEEP INTEL",desc:"Psychology, objections & pitch strategy per lead"},
+                    {icon:"💾",title:"AUTO-SAVE",desc:"Every lead saved to your CRM automatically"},
+                  ].map((f,i)=>(
+                    <div key={i} style={{background:"linear-gradient(135deg,rgba(201,168,76,0.05),rgba(0,0,0,0.3))",border:"1px solid rgba(201,168,76,0.15)",borderRadius:"14px",padding:"20px 16px",textAlign:"center"}}>
+                      <div style={{fontSize:"28px",marginBottom:"10px"}}>{f.icon}</div>
+                      <div style={{fontSize:"10px",fontWeight:"800",color:"#C9A84C",letterSpacing:"2px",marginBottom:"6px"}}>{f.title}</div>
+                      <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)",lineHeight:"1.5"}}>{f.desc}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>
@@ -773,10 +786,11 @@ Return ONLY raw JSON:
             </div>
 
             {filteredSaved.length===0?(
-              <div style={S.empty}>
-                <div style={{fontSize:"48px",marginBottom:"12px"}}>💾</div>
-                <div style={{fontSize:"18px",fontWeight:"700",color:"rgba(255,255,255,0.6)",marginBottom:"6px"}}>{t.noSaved}</div>
-                <button onClick={()=>setActiveTab("scan")} style={{...S.btnSm,marginTop:"20px"}}>{t.startScanning}</button>
+              <div style={{textAlign:"center",padding:"60px 24px"}}>
+                <div style={{fontSize:"56px",marginBottom:"16px"}}>💾</div>
+                <div style={{fontSize:"20px",fontWeight:"900",color:"#E8C96A",marginBottom:"8px",letterSpacing:"2px",textTransform:"uppercase"}}>NO SAVED LEADS YET</div>
+                <div style={{fontSize:"13px",color:"rgba(255,255,255,0.4)",marginBottom:"28px"}}>Run a scan and leads will be saved here automatically</div>
+                <button onClick={()=>setActiveTab("scan")} style={S.btnSm}>START SCANNING →</button>
               </div>
             ):(
               <div style={S.leadsGrid}>
