@@ -203,11 +203,11 @@ const S = {
   statNum: { fontSize: "26px", fontWeight: "800", background: "linear-gradient(135deg, #C9A84C, #E8C96A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
   statLbl: { fontSize: "10px", color: "#C9A84C", fontWeight: "800", textTransform: "uppercase", letterSpacing: "2px", marginTop: "6px" },
   leadsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px,1fr))", gap: "16px" },
-  lCard: { background: "rgba(0,10,5,0.8)", border: "1px solid rgba(201,168,76,0.12)", borderRadius: "14px", padding: "20px", transition: "all 0.25s ease", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" },
+  lCard: { background: "rgba(8,6,1,0.9)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: "14px", padding: "20px", transition: "all 0.25s ease", boxShadow: "0 4px 24px rgba(0,0,0,0.4)", display: "flex", flexDirection: "column" },
   lName: { fontSize: "15px", fontWeight: "800", marginBottom: "3px", letterSpacing: "0.3px" },
   lSub: { fontSize: "11px", color: "#C9A84C", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" },
   weakTag: { display: "inline-block", borderRadius: "6px", padding: "2px 7px", fontSize: "10px", fontWeight: "700", marginRight: "4px", marginBottom: "3px" },
-  lPain: { fontSize: "12px", color: "rgba(255,255,255,0.65)", lineHeight: "1.55", margin: "10px 0 14px" },
+  lPain: { fontSize: "12px", color: "rgba(255,255,255,0.65)", lineHeight: "1.55", margin: "10px 0 14px", flexGrow: 1 },
   vBtn: { width: "100%", padding: "10px", background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "8px", color: "#C9A84C", fontSize: "12px", fontWeight: "700", cursor: "pointer", transition: "all 0.2s", boxShadow: "inset 0 1px 0 rgba(201,168,76,0.1)" },
   overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" },
   modal: { background: "rgba(5,10,5,0.98)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "20px", padding: "36px", maxWidth: "740px", width: "100%", maxHeight: "88vh", overflowY: "auto", position: "relative", boxShadow: "0 0 60px rgba(201,168,76,0.1), 0 25px 50px rgba(0,0,0,0.8)" },
@@ -534,7 +534,7 @@ Return ONLY raw JSON:
   if (screen === "pricing") return (
     <div style={S.app(rtl)}><style>{CSS}</style>
       <div style={S.header}>
-        <div style={{...S.hLogo, cursor:"pointer"}} onClick={()=>setScreen("dashboard")}>PitchMind</div>
+        <div style={{...S.hLogo, cursor:"pointer"}} onClick={()=>setScreen("dashboard")}>PITCHMIND</div>
         <div style={{display:"flex",gap:"10px",alignItems:"center"}}>
           <LangBtn />
           <button onClick={()=>setScreen("dashboard")} style={{...S.btnOutline}}>← {lang==="ar"?"رجوع":"Back"}</button>
@@ -718,11 +718,21 @@ Return ONLY raw JSON:
                         </div>
                         <div style={{marginBottom:"8px"}}>
                           {lead.phone&&<div style={{fontSize:"11px",color:"rgba(255,255,255,0.55)",marginBottom:"2px"}}>📞 {lead.phone}</div>}
-                          <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#C9A84C",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                            🌐 {lead.website==="No website"?"❌ No website":lead.website.replace(/https?:\/\//,"")}
+                          {lead.website==="No website"?(
+                            <div style={{fontSize:"11px",color:"#ef4444",marginBottom:"2px"}}>🌐 ❌ NO WEBSITE</div>
+                          ):(
+                            <a href={lead.website.startsWith("http")?lead.website:"https://"+lead.website} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",color:"#C9A84C",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",textDecoration:"none"}}>
+                              🌐 {lead.website.replace(/https?:\/\//, "")} ↗
+                            </a>
+                          )}
                           </div>
                           <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
                           {lead.rating&&<div style={{fontSize:"11px",color:"#f59e0b",marginTop:"2px"}}>⭐ {lead.rating}/5 ({lead.reviews} {lang==="ar"?"تقييم":"reviews"})</div>}
+                          <div style={{display:"flex",gap:"6px",marginTop:"6px",flexWrap:"wrap"}}>
+                            <a href={"https://www.instagram.com/explore/search/keyword/?q="+encodeURIComponent(lead.name)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"6px",padding:"2px 8px",textDecoration:"none",display:"flex",alignItems:"center",gap:"3px"}}>📸 Instagram</a>
+                            <a href={"https://www.facebook.com/search/top/?q="+encodeURIComponent(lead.name)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"6px",padding:"2px 8px",textDecoration:"none",display:"flex",alignItems:"center",gap:"3px"}}>👍 Facebook</a>
+                            <a href={"https://www.google.com/search?q="+encodeURIComponent(lead.name+" "+lead.location)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"6px",padding:"2px 8px",textDecoration:"none",display:"flex",alignItems:"center",gap:"3px"}}>🔍 Google</a>
+                          </div>
                         </div>
                         {lead.weaknesses&&<div style={{marginBottom:"8px"}}>{lead.weaknesses.map((w,j)=><span key={j} style={{...S.weakTag,background:"rgba(239,68,68,0.12)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.25)"}}>⚠ {w}</span>)}</div>}
                         <div style={S.lPain}>{lead.painPoint}</div>
@@ -808,11 +818,21 @@ Return ONLY raw JSON:
                       </div>
                       <div style={{marginBottom:"8px"}}>
                         {lead.phone&&<div style={{fontSize:"11px",color:"rgba(255,255,255,0.55)",marginBottom:"2px"}}>📞 {lead.phone}</div>}
-                        <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#C9A84C",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          🌐 {lead.website==="No website"?"❌ No website":lead.website.replace(/https?:\/\//,"")}
+                          {lead.website==="No website"?(
+                            <div style={{fontSize:"11px",color:"#ef4444",marginBottom:"2px"}}>🌐 ❌ NO WEBSITE</div>
+                          ):(
+                            <a href={lead.website.startsWith("http")?lead.website:"https://"+lead.website} target="_blank" rel="noopener noreferrer" style={{fontSize:"11px",color:"#C9A84C",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",textDecoration:"none"}}>
+                              🌐 {lead.website.replace(/https?:\/\//, "")} ↗
+                            </a>
+                          )}
                         </div>
                         <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
                         {lead.rating&&<div style={{fontSize:"11px",color:"#f59e0b",marginTop:"2px"}}>⭐ {lead.rating}/5 ({lead.reviews} {lang==="ar"?"تقييم":"reviews"})</div>}
+                        <div style={{display:"flex",gap:"6px",marginTop:"6px",flexWrap:"wrap"}}>
+                          <a href={"https://www.instagram.com/explore/search/keyword/?q="+encodeURIComponent(lead.name)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"6px",padding:"2px 8px",textDecoration:"none"}}>📸 Instagram</a>
+                          <a href={"https://www.facebook.com/search/top/?q="+encodeURIComponent(lead.name)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"6px",padding:"2px 8px",textDecoration:"none"}}>👍 Facebook</a>
+                          <a href={"https://www.google.com/search?q="+encodeURIComponent(lead.name+" "+lead.location)} target="_blank" rel="noopener noreferrer" style={{fontSize:"10px",color:"rgba(255,255,255,0.5)",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"6px",padding:"2px 8px",textDecoration:"none"}}>🔍 Google</a>
+                        </div>
                       </div>
                       {/* Status */}
                       <div style={{marginBottom:"10px"}}>
