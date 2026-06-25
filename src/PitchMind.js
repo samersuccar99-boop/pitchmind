@@ -824,7 +824,6 @@ Return ONLY raw JSON:
                               🌐 {lead.website.replace(/https?:\/\//, "")} ↗
                             </a>
                           )}
-                        </div>
                         <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
                         {lead.rating&&<div style={{fontSize:"11px",color:"#f59e0b",marginTop:"2px"}}>⭐ {lead.rating}/5 ({lead.reviews} {lang==="ar"?"تقييم":"reviews"})</div>}
                         <div style={{display:"flex",gap:"6px",marginTop:"6px",flexWrap:"wrap"}}>
