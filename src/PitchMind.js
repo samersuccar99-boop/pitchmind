@@ -116,8 +116,33 @@ const LoadingDots = ({ color = C.b2bLight }) => (
   </div>
 );
 
+// ── ERROR BOUNDARY ────────────────────────────────────────────────────────
+class ErrorBoundary extends (require("react").Component) {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ background: "#080B0F", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter, sans-serif", color: "#fff", padding: "40px" }}>
+          <div style={{ maxWidth: "600px", textAlign: "center" }}>
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚠️</div>
+            <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "12px", color: "#F87171" }}>Something went wrong</div>
+            <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", background: "rgba(239,68,68,0.1)", padding: "16px", borderRadius: "10px", textAlign: "left", wordBreak: "break-all" }}>
+              {this.state.error.toString()}
+            </div>
+            <button onClick={() => window.location.reload()} style={{ marginTop: "20px", padding: "10px 24px", background: "#2563EB", border: "none", borderRadius: "8px", color: "#fff", cursor: "pointer", fontSize: "14px", fontWeight: "600" }}>
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── MAIN APP ───────────────────────────────────────────────────────────────
-export default function PitchMind() {
+function PitchMindInner() {
   const [screen, setScreen] = useState("login");
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -1170,4 +1195,8 @@ function SavedLeadCard({ lead, sc, mode, accentColor, onReport, onStatus, onNote
       </button>
     </div>
   );
+}
+
+export default function PitchMind() {
+  return <ErrorBoundary><PitchMindInner /></ErrorBoundary>;
 }
