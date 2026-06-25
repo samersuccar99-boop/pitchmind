@@ -632,6 +632,16 @@ Return ONLY raw JSON:
   );
 
   // ── DASHBOARD ──
+  if (screen !== "dashboard") return null;
+  if (!userData) return (
+    <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter, sans-serif" }}>
+      <style>{CSS}</style>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: "24px", fontWeight: "900", letterSpacing: "4px", background: `linear-gradient(135deg, ${C.b2bLight}, ${C.b2cLight})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "24px" }}>PITCHMIND</div>
+        <LoadingDots />
+      </div>
+    </div>
+  );
   const safeMode = mode || "b2b";
   const accentColor = safeMode === "b2b" ? C.b2bLight : C.b2cLight;
   const accentGlow = safeMode === "b2b" ? C.b2bGlow : C.b2cGlow;
