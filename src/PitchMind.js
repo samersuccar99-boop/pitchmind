@@ -1076,27 +1076,37 @@ Return ONLY raw JSON:
             {selectedLead.report && (() => {
               const r = selectedLead.report;
               const isB2C = selectedLead.leadType === "b2c";
+              // Safe stringify - convert objects/arrays to readable strings
+              const safeStr = (val) => {
+                if (!val) return null;
+                if (typeof val === "string") return val;
+                if (typeof val === "object") {
+                  return Object.entries(val).map(([k,v]) => `${k}: ${v}`).join("\n");
+                }
+                return String(val);
+              };
+
               const sections = isB2C ? [
-                ["👤 Profile Analysis", r.profileAnalysis],
-                ["🧠 Psychological Profile", r.psychologicalProfile],
-                ["📈 Buying Signals", r.buyingSignals],
-                ["🛡️ Objections & How To Handle", r.likelyObjections],
-                ["🎯 Pitch Strategy", r.pitchStrategy],
-                ["💬 Opening Message", r.openingMessage],
-                ["📅 Follow-Up Sequence", r.followUpSequence],
-                ["🔑 Closing Script", r.closingScript],
-                ["⏰ Best Time To Reach Out", r.bestTime],
-                ["⚡ #1 Conversion Tip", r.conversionTip],
+                ["👤 Profile Analysis", safeStr(r.profileAnalysis)],
+                ["🧠 Psychological Profile", safeStr(r.psychologicalProfile)],
+                ["📈 Buying Signals", safeStr(r.buyingSignals)],
+                ["🛡️ Objections & How To Handle", safeStr(r.likelyObjections)],
+                ["🎯 Pitch Strategy", safeStr(r.pitchStrategy)],
+                ["💬 Opening Message", safeStr(r.openingMessage)],
+                ["📅 Follow-Up Sequence", safeStr(r.followUpSequence)],
+                ["🔑 Closing Script", safeStr(r.closingScript)],
+                ["⏰ Best Time To Reach Out", safeStr(r.bestTime)],
+                ["⚡ #1 Conversion Tip", safeStr(r.conversionTip)],
               ] : [
-                ["🏢 Company Overview", r.companyOverview],
-                ["⚠️ Weakness Analysis", r.weaknessAnalysis],
-                ["👤 Decision Maker Profile", r.decisionMaker],
-                ["🧠 Psychological Profile", r.emotionalProfile],
-                ["🛡️ Expected Objections", r.objections],
-                ["🎯 Pitch Strategy", r.pitchStrategy],
-                ["💬 Perfect Opening Line", r.openingLine],
-                ["🔑 Closing Angle", r.closingAngle],
-                ["✉️ Cold Email Template", r.emailTemplate],
+                ["🏢 Company Overview", safeStr(r.companyOverview)],
+                ["⚠️ Weakness Analysis", safeStr(r.weaknessAnalysis)],
+                ["👤 Decision Maker Profile", safeStr(r.decisionMaker)],
+                ["🧠 Psychological Profile", safeStr(r.emotionalProfile)],
+                ["🛡️ Expected Objections", safeStr(r.objections)],
+                ["🎯 Pitch Strategy", safeStr(r.pitchStrategy)],
+                ["💬 Perfect Opening Line", safeStr(r.openingLine)],
+                ["🔑 Closing Angle", safeStr(r.closingAngle)],
+                ["✉️ Cold Email Template", safeStr(r.emailTemplate)],
               ];
               return sections.filter(([_, v]) => v).map(([title, content], i) => (
                 <div key={i} style={{ marginBottom: "18px" }}>
