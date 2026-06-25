@@ -394,6 +394,9 @@ Return ONLY raw JSON:
     </div>
   );
 
+  // Safety check
+  if (!screen) return null;
+
   // ── LOGIN / SIGNUP ──
   if (screen === "login" || screen === "signup") {
     const isLogin = screen === "login";
@@ -672,7 +675,7 @@ Return ONLY raw JSON:
             <span style={{ fontSize: "12px", fontWeight: "700", color: accentColor }}>{userData?.credits}</span>
             <span style={{ fontSize: "11px", color: C.dim }}>/ {userData?.maxCredits} credits</span>
           </div>
-          <button onClick={() => { setMode(safeMode === "b2b" ? "b2c" : "b2b"); updateDoc(doc(db, "users", user.uid), { mode: safeMode === "b2b" ? "b2c" : "b2b" }); }}
+          <button onClick={() => { const newMode = safeMode === "b2b" ? "b2c" : "b2b"; setMode(newMode); updateDoc(doc(db, "users", user.uid), { mode: newMode }); }}
             style={{ padding: "6px 12px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
             Switch to {safeMode === "b2b" ? "B2C" : "B2B"}
           </button>
@@ -899,12 +902,9 @@ Return ONLY raw JSON:
               <button onClick={() => exportCSV(savedLeads)} style={{ padding: "7px 16px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>📊 Export All CSV</button>
             </div>
 
-            {(() => {
-              const filtered = savedFilter === "all" ? savedLeads : savedLeads.filter(l => l.status === savedFilter);
-              return filtered;
-            })().length === 0 && savedLeads.length > 0 ? (
+            {(savedFilter === "all" ? savedLeads : savedLeads.filter(l => l.status === savedFilter)).length === 0 && savedLeads.length > 0 && (
               <div style={{ textAlign: "center", padding: "40px", color: C.dim, fontSize: "14px" }}>No leads with this status yet</div>
-            ) : null}
+            )}
             {savedLeads.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 24px" }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>💾</div>
@@ -1035,6 +1035,7 @@ Return ONLY raw JSON:
 
 // ── LEAD CARD (Scan Results) ─────────────────────────────────────────────
 function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, onReport }) {
+  if (!lead) return null;
   const isB2C = lead.leadType === "b2c" || mode === "b2c";
   return (
     <div style={{ background: "#0D1117", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "20px", display: "flex", flexDirection: "column", transition: "all 0.2s", cursor: "default" }}
@@ -1099,6 +1100,8 @@ function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, onReport }) 
 
 // ── SAVED LEAD CARD ──────────────────────────────────────────────────────
 function SavedLeadCard({ lead, sc, mode, accentColor, onReport, onStatus, onNotes, onDelete }) {
+  if (!lead) return null;
+  const sc2 = sc || { bg: "rgba(239,68,68,0.12)", color: "#F87171", border: "rgba(239,68,68,0.25)", label: "HOT" };
   const isB2C = lead.leadType === "b2c" || lead.mode === "b2c";
   const st = STATUS_OPTIONS.find(s => s.value === lead.status) || STATUS_OPTIONS[0];
   return (
@@ -1107,13 +1110,13 @@ function SavedLeadCard({ lead, sc, mode, accentColor, onReport, onStatus, onNote
         <div style={{ flex: 1, paddingRight: "8px" }}>
           <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "2px" }}>{lead.name}</div>
           <div style={{ fontSize: "11px", color: accentColor, fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-            {isB2C ? lead.platform : `${lead.type} · ${lead.location}`}
+            {isB2C ? (lead.platform || "N/A") : `${lead.type || ""} · ${lead.location || ""}`}
           </div>
         </div>
         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-          <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: "6px", padding: "3px 8px", textAlign: "center" }}>
-            <div style={{ fontSize: "8px", fontWeight: "800", letterSpacing: "0.5px" }}>{sc.label}</div>
-            <div style={{ fontSize: "14px", fontWeight: "900", lineHeight: 1.1 }}>{lead.score}</div>
+          <div style={{ background: sc2.bg, color: sc2.color, border: `1px solid ${sc2.border}`, borderRadius: "6px", padding: "3px 8px", textAlign: "center" }}>
+            <div style={{ fontSize: "8px", fontWeight: "800", letterSpacing: "0.5px" }}>{sc2.label}</div>
+            <div style={{ fontSize: "14px", fontWeight: "900", lineHeight: 1.1 }}>{lead.score || 0}</div>
           </div>
           <button onClick={onDelete} style={{ width: "28px", height: "28px", background: "transparent", border: `1px solid rgba(239,68,68,0.2)`, borderRadius: "6px", color: "rgba(239,68,68,0.5)", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
         </div>
