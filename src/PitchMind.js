@@ -1,24 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { auth, db } from "./firebase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  increment,
+} from "firebase/firestore";
 
+// ── Styles ──────────────────────────────────────────────────────────────────
 const S = {
   app: { fontFamily: "'Inter', sans-serif", background: "linear-gradient(135deg, #1a0533 0%, #0f0020 50%, #2d0a5e 100%)", minHeight: "100vh", color: "#fff" },
   center: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "24px" },
-  card: { background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "24px", padding: "40px", maxWidth: "560px", width: "100%", textAlign: "center" },
+  card: { background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "24px", padding: "40px", maxWidth: "480px", width: "100%", textAlign: "center" },
   logo: { fontSize: "30px", fontWeight: "800", background: "linear-gradient(135deg, #a855f7, #fff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "6px", letterSpacing: "-1px" },
   tag: { color: "#c084fc", fontSize: "12px", marginBottom: "28px", letterSpacing: "2px", textTransform: "uppercase" },
   label: { display: "block", textAlign: "left", fontSize: "11px", fontWeight: "700", color: "#c084fc", marginBottom: "6px", letterSpacing: "0.5px", textTransform: "uppercase" },
   inp: { width: "100%", padding: "12px 14px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(168,85,247,0.4)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box", marginBottom: "12px" },
   textarea: { width: "100%", padding: "12px 14px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(168,85,247,0.4)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", boxSizing: "border-box", marginBottom: "12px", resize: "vertical", minHeight: "70px", fontFamily: "inherit" },
-  btn: { width: "100%", padding: "13px", background: "linear-gradient(135deg, #6b21c8, #8b3cf7)", border: "none", borderRadius: "10px", color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer" },
+  btn: { width: "100%", padding: "13px", background: "linear-gradient(135deg, #6b21c8, #8b3cf7)", border: "none", borderRadius: "10px", color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer", marginBottom: "10px" },
   btnSm: { padding: "10px 20px", background: "linear-gradient(135deg, #6b21c8, #8b3cf7)", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" },
+  btnGhost: { width: "100%", padding: "12px", background: "transparent", border: "1px solid rgba(168,85,247,0.4)", borderRadius: "10px", color: "#c084fc", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
   header: { padding: "16px 28px", borderBottom: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 100 },
   hLogo: { fontSize: "20px", fontWeight: "800", background: "linear-gradient(135deg, #a855f7, #fff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.5px" },
   badge: { background: "rgba(139,60,247,0.2)", border: "1px solid #8b3cf7", borderRadius: "20px", padding: "3px 10px", fontSize: "11px", color: "#c084fc", fontWeight: "600" },
   main: { maxWidth: "1200px", margin: "0 auto", padding: "32px 24px" },
   profileBanner: { background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: "16px", padding: "16px 20px", marginBottom: "28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" },
   sCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: "18px", padding: "24px", marginBottom: "28px" },
-  searchGrid: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "12px", alignItems: "end" },
-  sInp: { padding: "12px 14px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "10px", color: "#fff", fontSize: "13px", outline: "none", width: "100%", boxSizing: "border-box" },
   statsRow: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "14px", marginBottom: "28px" },
   statCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "12px", padding: "18px", textAlign: "center" },
   statNum: { fontSize: "28px", fontWeight: "800", background: "linear-gradient(135deg, #a855f7, #fff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
@@ -42,8 +56,18 @@ const S = {
   dot: { display: "inline-block", width: "7px", height: "7px", borderRadius: "50%", background: "#a855f7", margin: "0 3px", animation: "pulse 1.4s ease-in-out infinite" },
   empty: { textAlign: "center", padding: "60px 24px", color: "rgba(255,255,255,0.4)" },
   err: { color: "#ef4444", fontSize: "12px", marginTop: "8px" },
-  step: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", fontSize: "13px", color: "rgba(255,255,255,0.5)" },
-  stepActive: { color: "#a855f7", fontWeight: "600" },
+  // Plans
+  plansGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px", marginBottom: "24px" },
+  planCard: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "16px", padding: "24px", textAlign: "center", cursor: "pointer", transition: "all 0.2s" },
+  planCardActive: { background: "rgba(168,85,247,0.15)", border: "2px solid #a855f7" },
+  creditBar: { background: "rgba(255,255,255,0.06)", borderRadius: "8px", height: "6px", overflow: "hidden", marginTop: "6px" },
+  creditFill: { height: "100%", borderRadius: "8px", background: "linear-gradient(90deg, #6b21c8, #a855f7)", transition: "width 0.3s" },
+};
+
+const PLANS = {
+  starter: { name: "Starter", price: 99, credits: 50, color: "#c084fc" },
+  growth: { name: "Growth", price: 199, credits: 150, color: "#a855f7" },
+  agency: { name: "Agency", price: 399, credits: 400, color: "#7c3aed" },
 };
 
 function scoreColor(s) {
@@ -60,7 +84,6 @@ async function callClaude(apiKey, prompt, maxTokens = 2000) {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.message || `HTTP ${response.status}`);
-  if (!data.content?.[0]?.text) throw new Error("Empty API response");
   return data.content[0].text;
 }
 
@@ -72,107 +95,173 @@ function safeJSON(raw) {
   throw new Error("Could not parse JSON");
 }
 
-// OpenStreetMap Overpass API — free, no key, no CORS
-async function searchOSM(industry, location) {
-  const query = `[out:json][timeout:25];
-area[name="${location}"]->.searchArea;
-(
-  node["name"]["amenity"](area.searchArea);
-  node["name"]["shop"](area.searchArea);
-  node["name"]["office"](area.searchArea);
-  node["name"]["tourism"](area.searchArea);
-)->.all;
-.all out 20;`;
-  const response = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    body: query,
-  });
-  if (!response.ok) throw new Error("OpenStreetMap unavailable");
-  const data = await response.json();
-  return data.elements || [];
-}
-
+// ── Main Component ───────────────────────────────────────────────────────────
 export default function PitchMind() {
-  const [step, setStep] = useState("login"); // login | profile | search
-  const [apiKey, setApiKey] = useState("");
-  const [keyInput, setKeyInput] = useState("");
-  const [keyErr, setKeyErr] = useState("");
+  const [screen, setScreen] = useState("login"); // login | signup | plan | profile | dashboard
+  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Auth form
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authErr, setAuthErr] = useState("");
+  const [authLoading2, setAuthLoading2] = useState(false);
+
+  // Plan selection
+  const [selectedPlan, setSelectedPlan] = useState("starter");
+
+  // Business profile
   const [profile, setProfile] = useState({ businessName: "", whatYouDo: "", targetIndustry: "", location: "" });
   const [profileErr, setProfileErr] = useState("");
+
+  // Search
   const [leads, setLeads] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [selectedLead, setSelectedLead] = useState(null);
   const [searchErr, setSearchErr] = useState("");
   const [progress, setProgress] = useState("");
+  const [selectedLead, setSelectedLead] = useState(null);
 
-  const handleLogin = () => {
-    if (!keyInput.trim().startsWith("sk-ant-")) { setKeyErr("Invalid key. Must start with sk-ant-"); return; }
-    setApiKey(keyInput.trim()); setKeyErr(""); setStep("profile");
+  // API Key (stored locally)
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("pm_api_key") || "");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+
+  const CSS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  *{box-sizing:border-box;margin:0;padding:0}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.4);border-radius:3px}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.25)}`;
+
+  // Auth state listener
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        const snap = await getDoc(doc(db, "users", u.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          setUserData(data);
+          if (data.profile) setProfile(data.profile);
+          if (!apiKey && data.profile) setScreen("dashboard");
+          else if (!apiKey) setScreen("apikey");
+          else if (!data.profile?.businessName) setScreen("profile");
+          else setScreen("dashboard");
+        } else {
+          setScreen("plan");
+        }
+      } else {
+        setUser(null);
+        setUserData(null);
+        setScreen("login");
+      }
+      setAuthLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  const handleSignup = async () => {
+    if (!email || !password) { setAuthErr("Please fill in all fields."); return; }
+    if (password.length < 6) { setAuthErr("Password must be at least 6 characters."); return; }
+    setAuthLoading2(true); setAuthErr("");
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      setAuthErr(e.message.replace("Firebase: ", ""));
+    }
+    setAuthLoading2(false);
   };
 
-  const handleProfile = () => {
+  const handleLogin = async () => {
+    if (!email || !password) { setAuthErr("Please fill in all fields."); return; }
+    setAuthLoading2(true); setAuthErr("");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      setAuthErr("Invalid email or password.");
+    }
+    setAuthLoading2(false);
+  };
+
+  const handlePlan = async () => {
+    const plan = PLANS[selectedPlan];
+    await setDoc(doc(db, "users", user.uid), {
+      email: user.email,
+      plan: selectedPlan,
+      credits: plan.credits,
+      maxCredits: plan.credits,
+      createdAt: new Date().toISOString(),
+      profile: null,
+    });
+    const snap = await getDoc(doc(db, "users", user.uid));
+    setUserData(snap.data());
+    setScreen("apikey");
+  };
+
+  const handleApiKey = () => {
+    if (!apiKeyInput.trim().startsWith("sk-ant-")) { setAuthErr("Invalid key. Must start with sk-ant-"); return; }
+    localStorage.setItem("pm_api_key", apiKeyInput.trim());
+    setApiKey(apiKeyInput.trim());
+    setAuthErr("");
+    setScreen("profile");
+  };
+
+  const handleProfile = async () => {
     if (!profile.businessName || !profile.whatYouDo || !profile.targetIndustry || !profile.location) {
       setProfileErr("Please fill in all fields."); return;
     }
-    setProfileErr(""); setStep("search");
+    await updateDoc(doc(db, "users", user.uid), { profile });
+    setUserData(prev => ({ ...prev, profile }));
+    setProfileErr("");
+    setScreen("dashboard");
+  };
+
+  const useCredit = async () => {
+    if (!userData || userData.credits <= 0) return false;
+    await updateDoc(doc(db, "users", user.uid), { credits: increment(-1) });
+    setUserData(prev => ({ ...prev, credits: prev.credits - 1 }));
+    return true;
   };
 
   const findLeads = async () => {
-    setSearchErr(""); setSearching(true); setLeads([]); setProgress("🔍 Searching for real businesses...");
+    if (userData.credits <= 0) {
+      setSearchErr("❌ No credits left! Please upgrade your plan to continue.");
+      return;
+    }
+    setSearchErr(""); setSearching(true); setLeads([]);
+    setProgress("🔍 Scanning for weak businesses...");
+
+    const ok = await useCredit();
+    if (!ok) { setSearchErr("No credits available."); setSearching(false); return; }
+
     try {
-      // Try OSM first
-      let osmResults = [];
-      try {
-        osmResults = await searchOSM(profile.targetIndustry, profile.location);
-      } catch (_) {}
-
-      setProgress("🧠 AI is identifying weak businesses that need your services...");
-
-      // Claude does the heavy lifting — finds + scores leads based on business profile
       const prompt = `You are PitchMind AI, an intelligent lead generation engine.
 
-MY BUSINESS PROFILE:
-- Business Name: ${profile.businessName}
-- What I do: ${profile.whatYouDo}
-- I am looking for: ${profile.targetIndustry} businesses in ${profile.location} that are WEAK in what I offer
+MY BUSINESS: ${profile.businessName}
+WHAT I OFFER: ${profile.whatYouDo}
+TARGET: ${profile.targetIndustry} businesses in ${profile.location} that are WEAK in what I offer.
 
-${osmResults.length > 0 ? `Real businesses found nearby: ${osmResults.slice(0,10).map(e => e.tags?.name).filter(Boolean).join(", ")}` : ""}
+Generate 6 realistic HOT leads — real-sounding ${profile.targetIndustry} businesses in ${profile.location} that clearly need "${profile.businessName}"'s services.
 
-YOUR TASK:
-Generate 6 realistic HOT leads — real-sounding businesses in ${profile.location} that are in the ${profile.targetIndustry} industry AND are clearly weak/struggling in areas where "${profile.businessName}" can help.
-
-For each lead, identify their SPECIFIC weaknesses that make them a perfect target for ${profile.businessName}.
-
-Return ONLY raw JSON array, no markdown:
-[
-  {
-    "name": "Real business name",
-    "type": "${profile.targetIndustry}",
-    "location": "${profile.location}",
-    "address": "Realistic street address in ${profile.location}",
-    "phone": "Realistic local phone number",
-    "website": "Either a basic/weak website URL or 'No website'",
-    "rating": 3.2,
-    "reviews": 18,
-    "score": 88,
-    "weaknesses": ["No social media", "Poor website", "Low reviews"],
-    "painPoint": "Specific one-sentence reason why they desperately need ${profile.businessName}'s services.",
-    "hotReason": "One sentence on why they are a HOT lead right now."
-  }
-]
-
-Rules:
-- Score 80-95 = HOT (they urgently need the service)
-- Score 60-79 = WARM (they could benefit)
-- Score below 60 = COLD (skip these)
-- Focus on businesses that are VISIBLY weak in: ${profile.whatYouDo}
-- Make names, addresses, phones realistic for ${profile.location}
-- Vary the weakness types across the 6 leads`;
+Return ONLY raw JSON array:
+[{
+  "name": "Business name",
+  "type": "${profile.targetIndustry}",
+  "location": "${profile.location}",
+  "address": "Street address in ${profile.location}",
+  "phone": "Local phone number",
+  "website": "weak website URL or 'No website'",
+  "rating": 3.2,
+  "reviews": 18,
+  "score": 88,
+  "weaknesses": ["No social media", "Poor website", "Low reviews"],
+  "painPoint": "Why they desperately need ${profile.businessName}.",
+  "hotReason": "Why they are a HOT lead right now."
+}]`;
 
       const raw = await callClaude(apiKey, prompt, 2000);
       const parsed = safeJSON(raw);
-      if (!Array.isArray(parsed)) throw new Error("Invalid response");
-      setLeads(parsed);
+      setLeads(Array.isArray(parsed) ? parsed : []);
       setProgress("");
     } catch (e) {
       setSearchErr(`Error: ${e.message}`);
@@ -182,148 +271,242 @@ Rules:
   };
 
   const loadProfile = async (lead) => {
-    setSelectedLead({ ...lead, loading: true, report: null, reportErr: null });
+    if (userData.credits <= 0) {
+      alert("No credits left! Please upgrade your plan.");
+      return;
+    }
+    setSelectedLead({ ...lead, loading: true, report: null });
+    await useCredit();
     try {
       const prompt = `You are PitchMind AI. Create a deep sales intelligence report.
 
 MY BUSINESS: ${profile.businessName}
 WHAT I OFFER: ${profile.whatYouDo}
 
-TARGET LEAD:
+TARGET:
 - Company: ${lead.name}
 - Industry: ${lead.type}
-- Location: ${lead.address}
+- Address: ${lead.address}
 - Phone: ${lead.phone}
 - Website: ${lead.website}
-- Google Rating: ${lead.rating}/5 (${lead.reviews} reviews)
-- Their Weaknesses: ${(lead.weaknesses || []).join(", ")}
-- Why They're Hot: ${lead.hotReason}
+- Rating: ${lead.rating}/5 (${lead.reviews} reviews)
+- Weaknesses: ${(lead.weaknesses || []).join(", ")}
 
-Return ONLY raw JSON, no markdown:
+Return ONLY raw JSON:
 {
-  "companyOverview": "3 sentences: what this business does, their current situation, and why they're struggling.",
-  "weaknessAnalysis": "Detailed breakdown of exactly WHY their marketing/online presence is weak and what it's costing them.",
-  "decisionMaker": "Who likely owns/manages this business: their personality, fears, and what they care about most.",
-  "emotionalProfile": "How the owner FEELS about their situation right now — their frustrations, fears, and hidden desires. Be psychological.",
-  "objections": "Top 3 objections they'll raise when you approach them, and the real reason behind each one.",
-  "pitchStrategy": "Step-by-step approach: what to say first, how to build trust, which pain to press on, how to position ${profile.businessName}.",
-  "openingLine": "The single perfect first sentence to say/write to this specific business owner that will make them stop and listen.",
-  "closingAngle": "The one argument that will make them say yes — specific to their weakness and your service.",
-  "socialApproach": "How to find and approach them on Instagram/Facebook/LinkedIn — what to look for and what to say.",
-  "emailTemplate": "A 4-sentence cold email/DM template completely personalized for this business and their specific weakness."
+  "companyOverview": "3 sentences about this business.",
+  "weaknessAnalysis": "Exactly WHY their presence is weak and what it costs them.",
+  "decisionMaker": "Who owns/manages this: personality, fears, priorities.",
+  "emotionalProfile": "Their frustrations, fears, hidden desires. Psychological.",
+  "objections": "Top 3 objections and real reasons behind each.",
+  "pitchStrategy": "Step-by-step: what to say first, trust-building, angle to use.",
+  "openingLine": "Perfect first sentence to make them stop and listen.",
+  "closingAngle": "Most powerful argument to close this deal.",
+  "socialApproach": "How to find and approach them on Instagram/Facebook.",
+  "emailTemplate": "4-sentence cold email personalized for this business."
 }`;
       const raw = await callClaude(apiKey, prompt, 2500);
       const parsed = safeJSON(raw);
       setSelectedLead({ ...lead, loading: false, report: parsed });
     } catch (e) {
-      setSelectedLead(prev => ({ ...prev, loading: false, reportErr: `Error: ${e.message}` }));
+      setSelectedLead(prev => ({ ...prev, loading: false, reportErr: e.message }));
     }
   };
 
-  const CSS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-  *{box-sizing:border-box;margin:0;padding:0}
-  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.4);border-radius:3px}
-  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.25)}
-  textarea{font-family:inherit}`;
+  const handleLogout = async () => {
+    await signOut(auth);
+    setLeads([]);
+    setScreen("login");
+  };
 
-  // STEP 1: LOGIN
-  if (step === "login") return (
+  // ── LOADING ──
+  if (authLoading) return (
+    <div style={{ ...S.app, ...S.center }}>
+      <style>{CSS}</style>
+      <div style={S.logo}>PitchMind</div>
+      <div style={{ marginTop: "20px" }}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{...S.dot,animationDelay:`${d}s`}}/>)}</div>
+    </div>
+  );
+
+  // ── LOGIN ──
+  if (screen === "login") return (
     <div style={S.app}><style>{CSS}</style>
       <div style={S.center}>
         <div style={S.card}>
           <div style={S.logo}>PitchMind</div>
           <div style={S.tag}>Find the lead. Win the deal.</div>
-          <label style={S.label}>Claude API Key</label>
-          <input style={S.inp} type="password" placeholder="sk-ant-..." value={keyInput}
-            onChange={e => { setKeyInput(e.target.value); setKeyErr(""); }}
-            onKeyDown={e => e.key === "Enter" && handleLogin()} />
-          {keyErr && <div style={{ ...S.err, marginBottom: "10px" }}>{keyErr}</div>}
-          <button style={S.btn} onClick={handleLogin}>Continue →</button>
-          <div style={{ marginTop: "16px", fontSize: "11px", color: "rgba(255,255,255,0.2)", lineHeight: "1.6" }}>🔒 Your key stays in your browser. Never stored.</div>
+          <label style={S.label}>Email</label>
+          <input style={S.inp} type="email" placeholder="you@example.com" value={email} onChange={e=>{setEmail(e.target.value);setAuthErr("");}} />
+          <label style={S.label}>Password</label>
+          <input style={S.inp} type="password" placeholder="••••••••" value={password} onChange={e=>{setPassword(e.target.value);setAuthErr("");}} onKeyDown={e=>e.key==="Enter"&&handleLogin()} />
+          {authErr && <div style={{...S.err,marginBottom:"10px"}}>{authErr}</div>}
+          <button style={S.btn} onClick={handleLogin} disabled={authLoading2}>{authLoading2?"Signing in...":"Sign In"}</button>
+          <button style={S.btnGhost} onClick={()=>{setScreen("signup");setAuthErr("");}}>Don't have an account? Sign Up</button>
         </div>
       </div>
     </div>
   );
 
-  // STEP 2: BUSINESS PROFILE
-  if (step === "profile") return (
+  // ── SIGNUP ──
+  if (screen === "signup") return (
     <div style={S.app}><style>{CSS}</style>
       <div style={S.center}>
-        <div style={{ ...S.card, maxWidth: "600px", textAlign: "left" }}>
-          <div style={{ ...S.logo, textAlign: "center" }}>PitchMind</div>
-          <div style={{ ...S.tag, textAlign: "center" }}>Tell us about your business</div>
+        <div style={S.card}>
+          <div style={S.logo}>PitchMind</div>
+          <div style={S.tag}>Create your account</div>
+          <label style={S.label}>Email</label>
+          <input style={S.inp} type="email" placeholder="you@example.com" value={email} onChange={e=>{setEmail(e.target.value);setAuthErr("");}} />
+          <label style={S.label}>Password</label>
+          <input style={S.inp} type="password" placeholder="Min 6 characters" value={password} onChange={e=>{setPassword(e.target.value);setAuthErr("");}} onKeyDown={e=>e.key==="Enter"&&handleSignup()} />
+          {authErr && <div style={{...S.err,marginBottom:"10px"}}>{authErr}</div>}
+          <button style={S.btn} onClick={handleSignup} disabled={authLoading2}>{authLoading2?"Creating account...":"Create Account"}</button>
+          <button style={S.btnGhost} onClick={()=>{setScreen("login");setAuthErr("");}}>Already have an account? Sign In</button>
+        </div>
+      </div>
+    </div>
+  );
 
-          <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "10px", padding: "12px 14px", marginBottom: "20px", fontSize: "12px", color: "rgba(255,255,255,0.6)", lineHeight: "1.6" }}>
-            💡 PitchMind needs to understand YOUR business so it can find the RIGHT leads — businesses that are weak in exactly what you offer.
+  // ── PLAN SELECTION ──
+  if (screen === "plan") return (
+    <div style={S.app}><style>{CSS}</style>
+      <div style={S.center}>
+        <div style={{...S.card, maxWidth:"700px"}}>
+          <div style={S.logo}>PitchMind</div>
+          <div style={S.tag}>Choose your plan</div>
+          <div style={S.plansGrid}>
+            {Object.entries(PLANS).map(([key, plan]) => (
+              <div key={key} style={{...S.planCard, ...(selectedPlan===key?S.planCardActive:{})}} onClick={()=>setSelectedPlan(key)}>
+                <div style={{fontSize:"18px",fontWeight:"800",color:plan.color,marginBottom:"4px"}}>${plan.price}</div>
+                <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)",marginBottom:"12px"}}>/month</div>
+                <div style={{fontSize:"15px",fontWeight:"700",marginBottom:"8px"}}>{plan.name}</div>
+                <div style={{fontSize:"24px",fontWeight:"800",color:plan.color}}>{plan.credits}</div>
+                <div style={{fontSize:"11px",color:"rgba(255,255,255,0.5)"}}>credits/month</div>
+              </div>
+            ))}
           </div>
+          <div style={{fontSize:"12px",color:"rgba(255,255,255,0.4)",marginBottom:"20px",textAlign:"left",lineHeight:"1.7"}}>
+            ✅ 1 credit = 1 lead scan OR 1 intelligence report<br/>
+            ✅ Credits reset every month<br/>
+            ✅ Upgrade anytime
+          </div>
+          <button style={S.btn} onClick={handlePlan}>Start with {PLANS[selectedPlan].name} →</button>
+        </div>
+      </div>
+    </div>
+  );
 
+  // ── API KEY ──
+  if (screen === "apikey") return (
+    <div style={S.app}><style>{CSS}</style>
+      <div style={S.center}>
+        <div style={S.card}>
+          <div style={S.logo}>PitchMind</div>
+          <div style={S.tag}>Connect your AI brain</div>
+          <div style={{background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:"10px",padding:"12px 14px",marginBottom:"20px",fontSize:"12px",color:"rgba(255,255,255,0.6)",lineHeight:"1.6",textAlign:"left"}}>
+            🔑 PitchMind uses Claude AI to generate lead intelligence.<br/>Get your free API key at <span style={{color:"#a855f7"}}>console.anthropic.com</span>
+          </div>
+          <label style={S.label}>Claude API Key</label>
+          <input style={S.inp} type="password" placeholder="sk-ant-..." value={apiKeyInput} onChange={e=>{setApiKeyInput(e.target.value);setAuthErr("");}} onKeyDown={e=>e.key==="Enter"&&handleApiKey()} />
+          {authErr && <div style={{...S.err,marginBottom:"10px"}}>{authErr}</div>}
+          <button style={S.btn} onClick={handleApiKey}>Continue →</button>
+          <div style={{marginTop:"14px",fontSize:"11px",color:"rgba(255,255,255,0.2)",lineHeight:"1.6"}}>🔒 Stored locally in your browser. Never sent to our servers.</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── PROFILE SETUP ──
+  if (screen === "profile") return (
+    <div style={S.app}><style>{CSS}</style>
+      <div style={S.center}>
+        <div style={{...S.card,maxWidth:"600px",textAlign:"left"}}>
+          <div style={{...S.logo,textAlign:"center"}}>PitchMind</div>
+          <div style={{...S.tag,textAlign:"center"}}>Tell us about your business</div>
+          <div style={{background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:"10px",padding:"12px 14px",marginBottom:"20px",fontSize:"12px",color:"rgba(255,255,255,0.6)",lineHeight:"1.6"}}>
+            💡 This helps PitchMind find businesses that are weak in exactly what you offer.
+          </div>
           <label style={S.label}>Your Business Name</label>
-          <input style={S.inp} placeholder="e.g. Peach Agency, TechCorp, ABC Factory..." value={profile.businessName}
-            onChange={e => setProfile(p => ({ ...p, businessName: e.target.value }))} />
-
-          <label style={S.label}>What You Offer / What You Do</label>
-          <textarea style={S.textarea} placeholder="e.g. We offer social media management, paid ads, web design and SEO for businesses in Lebanon and GCC..."
-            value={profile.whatYouDo} onChange={e => setProfile(p => ({ ...p, whatYouDo: e.target.value }))} />
-
-          <label style={S.label}>Target Industry (Who You Want to Sell To)</label>
-          <input style={S.inp} placeholder="e.g. Restaurants, Plastic manufacturers, Real estate agencies, Clinics..."
-            value={profile.targetIndustry} onChange={e => setProfile(p => ({ ...p, targetIndustry: e.target.value }))} />
-
+          <input style={S.inp} placeholder="e.g. Peach Agency..." value={profile.businessName} onChange={e=>setProfile(p=>({...p,businessName:e.target.value}))} />
+          <label style={S.label}>What You Offer</label>
+          <textarea style={S.textarea} placeholder="e.g. Social media management, paid ads, web design..." value={profile.whatYouDo} onChange={e=>setProfile(p=>({...p,whatYouDo:e.target.value}))} />
+          <label style={S.label}>Target Industry</label>
+          <input style={S.inp} placeholder="e.g. Restaurants, Clinics, Real Estate..." value={profile.targetIndustry} onChange={e=>setProfile(p=>({...p,targetIndustry:e.target.value}))} />
           <label style={S.label}>Target Location</label>
-          <input style={S.inp} placeholder="e.g. Beirut, Dubai, Kuwait City, Riyadh..."
-            value={profile.location} onChange={e => setProfile(p => ({ ...p, location: e.target.value }))}
-            onKeyDown={e => e.key === "Enter" && handleProfile()} />
-
-          {profileErr && <div style={{ ...S.err, marginBottom: "10px" }}>{profileErr}</div>}
+          <input style={S.inp} placeholder="e.g. Beirut, Dubai, Kuwait City..." value={profile.location} onChange={e=>setProfile(p=>({...p,location:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleProfile()} />
+          {profileErr && <div style={{...S.err,marginBottom:"10px"}}>{profileErr}</div>}
           <button style={S.btn} onClick={handleProfile}>Find My Leads →</button>
         </div>
       </div>
     </div>
   );
 
-  // STEP 3: MAIN DASHBOARD
-  const hotLeads = leads.filter(l => l.score >= 80).length;
-  const warmLeads = leads.filter(l => l.score >= 60 && l.score < 80).length;
-  const avgScore = leads.length ? Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length) : 0;
+  // ── DASHBOARD ──
+  const hotLeads = leads.filter(l=>l.score>=80).length;
+  const warmLeads = leads.filter(l=>l.score>=60&&l.score<80).length;
+  const avgScore = leads.length ? Math.round(leads.reduce((a,l)=>a+l.score,0)/leads.length) : 0;
+  const creditPct = userData ? Math.round((userData.credits/userData.maxCredits)*100) : 0;
+  const plan = PLANS[userData?.plan] || PLANS.starter;
 
   return (
     <div style={S.app}><style>{CSS}</style>
       <div style={S.header}>
         <div style={S.hLogo}>PitchMind</div>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <div style={S.badge}>🎯 Lead Intelligence</div>
-          <button onClick={() => setStep("profile")} style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "8px", color: "#c084fc", padding: "5px 10px", cursor: "pointer", fontSize: "11px" }}>Edit Profile</button>
-          <button onClick={() => { setApiKey(""); setStep("login"); setLeads([]); }} style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "rgba(255,255,255,0.4)", padding: "5px 10px", cursor: "pointer", fontSize: "11px" }}>Logout</button>
+        <div style={{display:"flex",gap:"10px",alignItems:"center"}}>
+          {/* Credits indicator */}
+          <div style={{background:"rgba(168,85,247,0.15)",border:"1px solid rgba(168,85,247,0.3)",borderRadius:"10px",padding:"6px 12px",fontSize:"12px"}}>
+            <span style={{color:"#c084fc",fontWeight:"700"}}>{userData?.credits || 0}</span>
+            <span style={{color:"rgba(255,255,255,0.4)"}}> / {userData?.maxCredits || 0} credits</span>
+          </div>
+          <div style={S.badge}>{plan.name} Plan</div>
+          <button onClick={()=>setScreen("profile")} style={{background:"rgba(168,85,247,0.15)",border:"1px solid rgba(168,85,247,0.3)",borderRadius:"8px",color:"#c084fc",padding:"5px 10px",cursor:"pointer",fontSize:"11px"}}>Edit Profile</button>
+          <button onClick={handleLogout} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"8px",color:"rgba(255,255,255,0.4)",padding:"5px 10px",cursor:"pointer",fontSize:"11px"}}>Logout</button>
         </div>
       </div>
 
       <div style={S.main}>
-        {/* Business Profile Banner */}
+        {/* Credit Warning */}
+        {userData?.credits <= 5 && userData?.credits > 0 && (
+          <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:"12px",padding:"14px 18px",marginBottom:"20px",fontSize:"13px",color:"#f59e0b",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            ⚠️ Only {userData.credits} credits left! Upgrade to keep finding leads.
+            <button onClick={()=>setScreen("plan")} style={{background:"rgba(245,158,11,0.2)",border:"1px solid rgba(245,158,11,0.4)",borderRadius:"8px",color:"#f59e0b",padding:"5px 12px",cursor:"pointer",fontSize:"12px",fontWeight:"700"}}>Upgrade →</button>
+          </div>
+        )}
+        {userData?.credits === 0 && (
+          <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"12px",padding:"14px 18px",marginBottom:"20px",fontSize:"13px",color:"#ef4444",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            ❌ No credits left! Upgrade your plan to continue searching.
+            <button onClick={()=>setScreen("plan")} style={{background:"rgba(239,68,68,0.2)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:"8px",color:"#ef4444",padding:"5px 12px",cursor:"pointer",fontSize:"12px",fontWeight:"700"}}>Upgrade Now →</button>
+          </div>
+        )}
+
+        {/* Profile Banner */}
         <div style={S.profileBanner}>
           <div>
-            <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "3px" }}>🏢 {profile.businessName}</div>
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)" }}>{profile.whatYouDo.substring(0, 80)}...</div>
+            <div style={{fontSize:"13px",fontWeight:"700",marginBottom:"3px"}}>🏢 {profile.businessName}</div>
+            <div style={{fontSize:"12px",color:"rgba(255,255,255,0.5)"}}>{profile.whatYouDo?.substring(0,80)}...</div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "12px", color: "#c084fc", fontWeight: "600" }}>Targeting: {profile.targetIndustry}</div>
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>📍 {profile.location}</div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:"12px",color:"#c084fc",fontWeight:"600"}}>Targeting: {profile.targetIndustry}</div>
+            <div style={{fontSize:"11px",color:"rgba(255,255,255,0.4)"}}>📍 {profile.location}</div>
+            <div style={{marginTop:"6px"}}>
+              <div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",marginBottom:"3px"}}>{userData?.credits}/{userData?.maxCredits} credits</div>
+              <div style={S.creditBar}><div style={{...S.creditFill,width:`${creditPct}%`}}/></div>
+            </div>
           </div>
         </div>
 
         {/* Hero */}
-        <div style={{ marginBottom: "28px" }}>
-          <div style={{ fontSize: "36px", fontWeight: "800", lineHeight: "1.1", marginBottom: "8px", letterSpacing: "-1.5px" }}>
-            Find businesses<br />
-            <span style={{ background: "linear-gradient(135deg, #a855f7, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>that need you.</span>
+        <div style={{marginBottom:"28px"}}>
+          <div style={{fontSize:"36px",fontWeight:"800",lineHeight:"1.1",marginBottom:"8px",letterSpacing:"-1.5px"}}>
+            Find businesses<br/>
+            <span style={{background:"linear-gradient(135deg, #a855f7, #c084fc)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>that need you.</span>
           </div>
-          <div style={{ color: "#c084fc", fontSize: "14px" }}>AI scans {profile.targetIndustry} businesses in {profile.location} and finds the ones weakest in {profile.whatYouDo.split(" ").slice(0,4).join(" ")}...</div>
+          <div style={{color:"#c084fc",fontSize:"14px"}}>AI scans {profile.targetIndustry} businesses in {profile.location} and finds the ones weakest in what you offer.</div>
         </div>
 
         {/* Stats */}
         {leads.length > 0 && (
           <div style={S.statsRow}>
-            {[["🔴 Hot Leads", hotLeads], ["🟡 Warm Leads", warmLeads], ["Avg. Score", `${avgScore}%`]].map(([lbl, val]) => (
+            {[["🔴 Hot Leads",hotLeads],["🟡 Warm Leads",warmLeads],["Avg. Score",`${avgScore}%`]].map(([lbl,val])=>(
               <div key={lbl} style={S.statCard}>
                 <div style={S.statNum}>{val}</div>
                 <div style={S.statLbl}>{lbl}</div>
@@ -334,81 +517,66 @@ Return ONLY raw JSON, no markdown:
 
         {/* Search */}
         <div style={S.sCard}>
-          <div style={{ fontSize: "12px", fontWeight: "700", color: "#c084fc", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "1px" }}>🔍 Scan for Hot Leads</div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: "200px" }}>
+          <div style={{fontSize:"12px",fontWeight:"700",color:"#c084fc",marginBottom:"16px",textTransform:"uppercase",letterSpacing:"1px"}}>🔍 Scan for Hot Leads <span style={{color:"rgba(255,255,255,0.3)",fontWeight:"400",textTransform:"none",fontSize:"11px"}}>— costs 1 credit per scan</span></div>
+          <div style={{display:"flex",gap:"12px",alignItems:"flex-end",flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:"180px"}}>
               <label style={S.label}>Target Industry</label>
-              <input style={S.sInp} placeholder="Restaurants, Clinics, Factories..." value={profile.targetIndustry}
-                onChange={e => setProfile(p => ({ ...p, targetIndustry: e.target.value }))} />
+              <input style={{...S.inp,marginBottom:0}} placeholder="Restaurants, Clinics..." value={profile.targetIndustry} onChange={e=>setProfile(p=>({...p,targetIndustry:e.target.value}))} />
             </div>
-            <div style={{ flex: 1, minWidth: "200px" }}>
+            <div style={{flex:1,minWidth:"180px"}}>
               <label style={S.label}>Location</label>
-              <input style={S.sInp} placeholder="Beirut, Dubai, Kuwait..." value={profile.location}
-                onChange={e => setProfile(p => ({ ...p, location: e.target.value }))} />
+              <input style={{...S.inp,marginBottom:0}} placeholder="Beirut, Dubai..." value={profile.location} onChange={e=>setProfile(p=>({...p,location:e.target.value}))} />
             </div>
-            <button style={{ ...S.btnSm, opacity: searching ? 0.6 : 1, marginTop: "18px" }} onClick={findLeads} disabled={searching}>
-              {searching ? "Scanning..." : "Scan Now →"}
+            <button style={{...S.btnSm,opacity:searching||userData?.credits===0?0.6:1}} onClick={findLeads} disabled={searching||userData?.credits===0}>
+              {searching?"Scanning...":"Scan Now →"}
             </button>
           </div>
-          {progress && <div style={{ marginTop: "12px", fontSize: "12px", color: "#c084fc" }}>{progress}</div>}
+          {progress && <div style={{marginTop:"12px",fontSize:"12px",color:"#c084fc"}}>{progress}</div>}
           {searchErr && <div style={S.err}>{searchErr}</div>}
         </div>
 
         {/* Loading */}
         {searching && (
-          <div style={{ textAlign: "center", padding: "50px" }}>
-            <div style={{ marginBottom: "12px" }}>{[0,0.2,0.4].map((d,i) => <span key={i} style={{...S.dot, animationDelay:`${d}s`}}/>)}</div>
-            <div style={{ color: "#c084fc", fontSize: "14px", fontWeight: "600" }}>Hunting for weak {profile.targetIndustry} businesses in {profile.location}...</div>
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px", marginTop: "5px" }}>Finding businesses that need {profile.businessName} the most</div>
+          <div style={{textAlign:"center",padding:"50px"}}>
+            <div style={{marginBottom:"12px"}}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{...S.dot,animationDelay:`${d}s`}}/>)}</div>
+            <div style={{color:"#c084fc",fontSize:"14px",fontWeight:"600"}}>Hunting for weak {profile.targetIndustry} businesses in {profile.location}...</div>
           </div>
         )}
 
-        {/* Leads */}
+        {/* Leads Grid */}
         {leads.length > 0 && !searching && (
           <>
-            <div style={{ fontSize: "15px", fontWeight: "700", marginBottom: "16px" }}>⚡ {leads.length} Leads Found — Sorted by Opportunity</div>
+            <div style={{fontSize:"15px",fontWeight:"700",marginBottom:"16px"}}>⚡ {leads.length} Leads Found</div>
             <div style={S.leadsGrid}>
-              {[...leads].sort((a,b) => b.score - a.score).map((lead, i) => {
+              {[...leads].sort((a,b)=>b.score-a.score).map((lead,i)=>{
                 const sc = scoreColor(lead.score);
                 return (
                   <div key={i} style={S.lCard}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(168,85,247,0.5)"; e.currentTarget.style.background="rgba(255,255,255,0.07)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(168,85,247,0.2)"; e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                      <div style={{ flex: 1, paddingRight: "8px" }}>
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(168,85,247,0.5)";e.currentTarget.style.background="rgba(255,255,255,0.07)";}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(168,85,247,0.2)";e.currentTarget.style.background="rgba(255,255,255,0.04)";}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                      <div style={{flex:1,paddingRight:"8px"}}>
                         <div style={S.lName}>{lead.name}</div>
                         <div style={S.lSub}>{lead.type} · {lead.location}</div>
                       </div>
-                      <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: "8px", padding: "3px 8px", fontSize: "11px", fontWeight: "800", flexShrink: 0, textAlign: "center" }}>
-                        <div>{sc.label}</div>
-                        <div style={{ fontSize: "13px" }}>{lead.score}</div>
+                      <div style={{background:sc.bg,color:sc.color,border:`1px solid ${sc.border}`,borderRadius:"8px",padding:"3px 8px",fontSize:"11px",fontWeight:"800",flexShrink:0,textAlign:"center"}}>
+                        <div>{sc.label}</div><div style={{fontSize:"13px"}}>{lead.score}</div>
                       </div>
                     </div>
-
-                    {/* Contact */}
-                    <div style={{ marginBottom: "8px" }}>
-                      {lead.phone && <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", marginBottom: "2px" }}>📞 {lead.phone}</div>}
-                      <div style={{ fontSize: "11px", color: lead.website === "No website" ? "#ef4444" : "#a855f7", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        🌐 {lead.website === "No website" ? "❌ No website detected" : lead.website.replace(/https?:\/\//, "")}
+                    <div style={{marginBottom:"8px"}}>
+                      {lead.phone&&<div style={{fontSize:"11px",color:"rgba(255,255,255,0.55)",marginBottom:"2px"}}>📞 {lead.phone}</div>}
+                      <div style={{fontSize:"11px",color:lead.website==="No website"?"#ef4444":"#a855f7",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        🌐 {lead.website==="No website"?"❌ No website":lead.website.replace(/https?:\/\//,"")}
                       </div>
-                      <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {lead.address}</div>
-                      {lead.rating && <div style={{ fontSize: "11px", color: "#f59e0b", marginTop: "2px" }}>⭐ {lead.rating}/5 ({lead.reviews} reviews)</div>}
+                      <div style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {lead.address}</div>
+                      {lead.rating&&<div style={{fontSize:"11px",color:"#f59e0b",marginTop:"2px"}}>⭐ {lead.rating}/5 ({lead.reviews} reviews)</div>}
                     </div>
-
-                    {/* Weakness Tags */}
-                    {lead.weaknesses && (
-                      <div style={{ marginBottom: "8px" }}>
-                        {lead.weaknesses.map((w, j) => (
-                          <span key={j} style={{ ...S.weakTag, background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}>⚠ {w}</span>
-                        ))}
-                      </div>
-                    )}
-
+                    {lead.weaknesses&&<div style={{marginBottom:"8px"}}>{lead.weaknesses.map((w,j)=><span key={j} style={{...S.weakTag,background:"rgba(239,68,68,0.12)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.25)"}}>⚠ {w}</span>)}</div>}
                     <div style={S.lPain}>{lead.painPoint}</div>
-                    <button style={S.vBtn} onClick={() => loadProfile(lead)}
-                      onMouseEnter={e => { e.currentTarget.style.background="rgba(139,60,247,0.35)"; e.currentTarget.style.color="#fff"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background="rgba(139,60,247,0.2)"; e.currentTarget.style.color="#c084fc"; }}>
-                      Get Full Pitch Strategy →
+                    <button style={S.vBtn} onClick={()=>loadProfile(lead)}
+                      onMouseEnter={e=>{e.currentTarget.style.background="rgba(139,60,247,0.35)";e.currentTarget.style.color="#fff";}}
+                      onMouseLeave={e=>{e.currentTarget.style.background="rgba(139,60,247,0.2)";e.currentTarget.style.color="#c084fc";}}>
+                      Get Full Pitch Strategy → <span style={{opacity:0.5,fontSize:"10px"}}>(1 credit)</span>
                     </button>
                   </div>
                 );
@@ -417,66 +585,53 @@ Return ONLY raw JSON, no markdown:
           </>
         )}
 
-        {leads.length === 0 && !searching && (
+        {leads.length===0&&!searching&&(
           <div style={S.empty}>
-            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎯</div>
-            <div style={{ fontSize: "18px", fontWeight: "700", color: "rgba(255,255,255,0.6)", marginBottom: "6px" }}>Ready to hunt for leads?</div>
-            <div style={{ fontSize: "13px" }}>PitchMind will find {profile.targetIndustry} businesses in {profile.location} that are weakest in what you offer.</div>
+            <div style={{fontSize:"48px",marginBottom:"12px"}}>🎯</div>
+            <div style={{fontSize:"18px",fontWeight:"700",color:"rgba(255,255,255,0.6)",marginBottom:"6px"}}>Ready to hunt for leads?</div>
+            <div style={{fontSize:"13px"}}>PitchMind will find {profile.targetIndustry} businesses in {profile.location} that are weakest in what you offer.</div>
           </div>
         )}
       </div>
 
-      {/* Intelligence Report Modal */}
-      {selectedLead && (
-        <div style={S.overlay} onClick={e => e.target === e.currentTarget && setSelectedLead(null)}>
+      {/* Intelligence Modal */}
+      {selectedLead&&(
+        <div style={S.overlay} onClick={e=>e.target===e.currentTarget&&setSelectedLead(null)}>
           <div style={S.modal}>
-            <button style={S.mClose} onClick={() => setSelectedLead(null)}>✕</button>
-            <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontSize: "22px", fontWeight: "800", marginBottom: "3px" }}>{selectedLead.name}</div>
-              <div style={{ color: "#c084fc", fontSize: "12px", marginBottom: "14px" }}>{selectedLead.type} · {selectedLead.location}</div>
+            <button style={S.mClose} onClick={()=>setSelectedLead(null)}>✕</button>
+            <div style={{marginBottom:"20px"}}>
+              <div style={{fontSize:"22px",fontWeight:"800",marginBottom:"3px"}}>{selectedLead.name}</div>
+              <div style={{color:"#c084fc",fontSize:"12px",marginBottom:"14px"}}>{selectedLead.type} · {selectedLead.location}</div>
               <div style={S.infoGrid}>
                 <div style={S.infoBox}><div style={S.infoLbl}>📞 Phone</div><div style={S.infoVal}>{selectedLead.phone}</div></div>
                 <div style={S.infoBox}><div style={S.infoLbl}>⭐ Rating</div><div style={S.infoVal}>{selectedLead.rating}/5 ({selectedLead.reviews} reviews)</div></div>
-                <div style={{...S.infoBox, gridColumn:"1/-1"}}><div style={S.infoLbl}>🌐 Website</div><div style={{...S.infoVal, color: selectedLead.website==="No website"?"#ef4444":"#a855f7"}}>{selectedLead.website}</div></div>
-                <div style={{...S.infoBox, gridColumn:"1/-1"}}><div style={S.infoLbl}>📍 Address</div><div style={S.infoVal}>{selectedLead.address}</div></div>
+                <div style={{...S.infoBox,gridColumn:"1/-1"}}><div style={S.infoLbl}>🌐 Website</div><div style={{...S.infoVal,color:selectedLead.website==="No website"?"#ef4444":"#a855f7"}}>{selectedLead.website}</div></div>
+                <div style={{...S.infoBox,gridColumn:"1/-1"}}><div style={S.infoLbl}>📍 Address</div><div style={S.infoVal}>{selectedLead.address}</div></div>
               </div>
-              {selectedLead.weaknesses && (
-                <div style={{ marginBottom: "4px" }}>
-                  {selectedLead.weaknesses.map((w,i) => <span key={i} style={{ ...S.weakTag, background:"rgba(239,68,68,0.12)", color:"#ef4444", border:"1px solid rgba(239,68,68,0.25)" }}>⚠ {w}</span>)}
-                </div>
-              )}
+              {selectedLead.weaknesses&&<div style={{marginBottom:"4px"}}>{selectedLead.weaknesses.map((w,i)=><span key={i} style={{...S.weakTag,background:"rgba(239,68,68,0.12)",color:"#ef4444",border:"1px solid rgba(239,68,68,0.25)"}}>⚠ {w}</span>)}</div>}
             </div>
-
-            {selectedLead.loading && (
-              <div style={{ textAlign: "center", padding: "36px" }}>
-                <div style={{ marginBottom: "10px" }}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{...S.dot,animationDelay:`${d}s`}}/>)}</div>
-                <div style={{ color: "#c084fc", fontWeight: "600", fontSize: "13px" }}>Building your personalized pitch strategy...</div>
+            {selectedLead.loading&&(
+              <div style={{textAlign:"center",padding:"36px"}}>
+                <div style={{marginBottom:"10px"}}>{[0,0.2,0.4].map((d,i)=><span key={i} style={{...S.dot,animationDelay:`${d}s`}}/>)}</div>
+                <div style={{color:"#c084fc",fontWeight:"600",fontSize:"13px"}}>Building your personalized pitch strategy...</div>
               </div>
             )}
-            {selectedLead.reportErr && (
-              <div style={{ color:"#ef4444", padding:"14px", background:"rgba(239,68,68,0.1)", borderRadius:"10px", fontSize:"12px" }}>
-                {selectedLead.reportErr}
-                <button onClick={()=>loadProfile(selectedLead)} style={{ marginLeft:"10px", background:"rgba(239,68,68,0.2)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:"6px", color:"#ef4444", padding:"3px 8px", cursor:"pointer", fontSize:"11px" }}>Retry</button>
-              </div>
-            )}
-            {selectedLead.report && (() => {
-              const r = selectedLead.report;
+            {selectedLead.reportErr&&<div style={{color:"#ef4444",padding:"14px",background:"rgba(239,68,68,0.1)",borderRadius:"10px",fontSize:"12px"}}>{selectedLead.reportErr}</div>}
+            {selectedLead.report&&(()=>{
+              const r=selectedLead.report;
               return [
                 ["🏢","Company Overview",r.companyOverview],
                 ["⚠️","Weakness Analysis",r.weaknessAnalysis],
                 ["👤","Decision Maker Profile",r.decisionMaker],
                 ["🧠","Psychological & Emotional Profile",r.emotionalProfile],
-                ["🛡️","Expected Objections & Real Reasons",r.objections],
-                ["🎯","Pitch Strategy — Step by Step",r.pitchStrategy],
+                ["🛡️","Expected Objections",r.objections],
+                ["🎯","Pitch Strategy",r.pitchStrategy],
                 ["💬","Perfect Opening Line",r.openingLine],
                 ["🔑","Closing Angle",r.closingAngle],
                 ["📱","Social Media Approach",r.socialApproach],
-                ["✉️","Cold Email / DM Template",r.emailTemplate],
+                ["✉️","Cold Email Template",r.emailTemplate],
               ].map(([icon,title,content],i)=>(
-                <div key={i}>
-                  <div style={S.mTitle}>{icon} {title}</div>
-                  <div style={S.mBox}>{content}</div>
-                </div>
+                <div key={i}><div style={S.mTitle}>{icon} {title}</div><div style={S.mBox}>{content}</div></div>
               ));
             })()}
           </div>
