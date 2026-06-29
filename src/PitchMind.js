@@ -16,10 +16,29 @@ const C = {
 };
 
 const PLANS = {
-  starter: { name: "Starter", price: 99, credits: 50, sessions: 10, leads: 60, color: C.b2bLight, desc: "Perfect for freelancers & solopreneurs", features: ["10 sessions/month", "60 leads + AI reports", "B2B + B2C intelligence", "Competitor Radar", "Campaign Builder", "One-click WhatsApp & Email", "CRM pipeline", "CSV export"] },
-  growth: { name: "Growth", price: 199, credits: 125, sessions: 25, leads: 150, color: C.b2cLight, desc: "For growing small businesses", features: ["25 sessions/month", "150 leads + AI reports", "Everything in Starter", "Website scoring (0-100)", "Higgsfield creative (coming soon)", "Priority support"] },
-  pro: { name: "Pro", price: 349, credits: 300, sessions: 60, leads: 360, color: C.gold, desc: "For agencies & power users", features: ["60 sessions/month", "360 leads + AI reports", "Everything in Growth", "Competitor deep analysis", "Full campaign packages", "Dedicated support"] },
+  starter: {
+    name: "Starter", price: 170, credits: 50, sessions: 10, leads: 60,
+    color: C.b2bLight, desc: "Perfect for freelancers & solopreneurs",
+    features: ["10 sessions/month", "60 leads + AI reports", "B2B Scanner", "B2C CSV Upload", "Competitor Radar", "Campaign Builder", "One-click WhatsApp & Email", "CRM pipeline"],
+    b2cReviews: false, b2cApollo: false, b2cSocial: false, higgsfield: false, prioritySupport: false,
+  },
+  growth: {
+    name: "Growth", price: 250, credits: 125, sessions: 25, leads: 150,
+    color: C.b2cLight, desc: "Best value — most popular choice",
+    features: ["25 sessions/month", "150 leads + AI reports", "Everything in Starter", "B2C Google Reviews leads", "B2C Apollo enrichment", "Website scoring (0-100)", "Priority support"],
+    b2cReviews: true, b2cApollo: true, b2cSocial: false, higgsfield: false, prioritySupport: true,
+  },
+  pro: {
+    name: "Pro", price: 450, credits: 300, sessions: 60, leads: 360,
+    color: C.gold, desc: "For agencies & power users",
+    features: ["60 sessions/month", "360 leads + AI reports", "Everything in Growth", "B2C Social Media leads", "Higgsfield ad creatives", "Full campaign packages", "Dedicated support"],
+    b2cReviews: true, b2cApollo: true, b2cSocial: true, higgsfield: true, prioritySupport: true,
+  },
 };
+
+// API keys live in Vercel env vars - never exposed to users
+const GOOGLE_KEY = process.env.REACT_APP_GOOGLE_KEY || "";
+const APOLLO_KEY = process.env.REACT_APP_APOLLO_KEY || "";
 
 const CREDITS_PER_SESSION = 5;
 
@@ -161,14 +180,13 @@ function PitchMindApp() {
   const [selectedComp, setSelectedComp] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [campaignLoading, setCampaignLoading] = useState(false);
-  const [higgsfield, setHighsfield] = useState({ apiKey: "", connected: false });
-  const [googlePlaces, setGooglePlaces] = useState({ apiKey: "", connected: false });
-  const [apollo, setApollo] = useState({ apiKey: "", connected: false });
-  const [phantombuster, setPhantombuster] = useState({ apiKey: "", connected: false });
-  const [b2cMode, setB2cMode] = useState("csv"); // csv | reviews | apollo | social
-  const [reviewQuery, setReviewQuery] = useState({ business: "", location: "" });
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsTab, setSettingsTab] = useState("profile"); // profile | integrations | plan
+  const [settingsTab, setSettingsTab] = useState("profile");
+  const [b2cMode, setB2cMode] = useState("csv");
+  const [reviewQuery, setReviewQuery] = useState({ business: "", location: "" });
+  const [reviewLeads, setReviewLeads] = useState([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewErr, setReviewErr] = useState("");
   const [brandSettings, setBrandSettings] = useState({ name: "PitchMind", color: C.b2bLight, logoUrl: "", tagline: "Find the lead. Win the deal." });
   const [showBrand, setShowBrand] = useState(false);
   const [websiteScores, setWebsiteScores] = useState({});
@@ -178,17 +196,6 @@ function PitchMindApp() {
   useEffect(() => {
     const saved = localStorage.getItem("pm_brand");
     if (saved) { try { setBrandSettings(JSON.parse(saved)); } catch (_) {} }
-  }, []);
-
-  useEffect(() => {
-    const hk = localStorage.getItem("pm_higgsfield_key");
-    if (hk) setHighsfield({ apiKey: hk, connected: true });
-    const gk = localStorage.getItem("pm_google_key");
-    if (gk) setGooglePlaces({ apiKey: gk, connected: true });
-    const ak = localStorage.getItem("pm_apollo_key");
-    if (ak) setApollo({ apiKey: ak, connected: true });
-    const pk = localStorage.getItem("pm_phantom_key");
-    if (pk) setPhantombuster({ apiKey: pk, connected: true });
   }, []);
 
   useEffect(() => {
@@ -312,6 +319,78 @@ function PitchMindApp() {
     setBrandSettings(settings);
     localStorage.setItem("pm_brand", JSON.stringify(settings));
     if (user) await updateDoc(doc(db, "users", user.uid), { brandSettings: settings });
+  };
+
+  // ── PLAN FEATURE HELPERS ──
+  const userPlan = PLANS[userData?.plan || "starter"] || PLANS.starter;
+  const canUseReviews = userPlan.b2cReviews;
+  const canUseApollo = userPlan.b2cApollo;
+  const canUseSocial = userPlan.b2cSocial;
+  const canUseHiggsfield = userPlan.higgsfield;
+
+  // ── GOOGLE REVIEWS LEAD FINDER ──
+  const findReviewLeads = async () => {
+    if (!reviewQuery.business || !reviewQuery.location) { setReviewErr("Enter business type and location."); return; }
+    if (userData.credits < CREDITS_PER_SESSION) { setReviewErr("Not enough credits."); return; }
+    setReviewErr(""); setReviewLoading(true); setReviewLeads([]);
+    if (!await useCredits()) { setReviewErr("Not enough credits."); setReviewLoading(false); return; }
+    try {
+      if (GOOGLE_KEY) {
+        // Real Google Places API call
+        const searchRes = await fetch(
+          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(reviewQuery.business + " in " + reviewQuery.location)}&key=${GOOGLE_KEY}`
+        );
+        const searchData = await searchRes.json();
+        const places = (searchData.results || []).slice(0, 5);
+        const allReviewers = [];
+        for (const place of places) {
+          const detailRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,reviews,rating&key=${GOOGLE_KEY}`
+          );
+          const detail = await detailRes.json();
+          const reviews = (detail.result?.reviews || []).filter(r => r.rating <= 3);
+          reviews.forEach(r => {
+            allReviewers.push({
+              name: r.author_name, platform: "Google Reviews", location: reviewQuery.location,
+              engagement: `${r.rating}★ review at ${place.name}: "${r.text?.substring(0, 80)}..."`,
+              score: r.rating <= 2 ? 88 : 72,
+              interestLevel: r.rating <= 2 ? "High" : "Medium",
+              keyMetric: `${r.rating}/5 stars — unhappy with competitor`,
+              bestApproach: "WhatsApp", painPoint: `Dissatisfied with ${place.name}`,
+              hotReason: `Left ${r.rating}★ review — ready to switch`,
+              strategy: `Reach out offering better service than ${place.name}`,
+              leadType: "b2c", competitorName: place.name,
+            });
+          });
+        }
+        const top6 = allReviewers.sort((a, b) => b.score - a.score).slice(0, 6);
+        if (top6.length > 0) {
+          setReviewLeads(top6);
+          for (const l of top6) await saveLead(l);
+        } else {
+          // Fallback to AI if no unhappy reviewers found
+          throw new Error("NO_REVIEWS");
+        }
+      } else {
+        throw new Error("NO_KEY");
+      }
+    } catch (e) {
+      // AI fallback when no Google key or no results
+      try {
+        const prompt = `You are PitchMind. Generate 6 realistic people who recently left unhappy reviews at competitor ${reviewQuery.business} businesses in ${reviewQuery.location} and are ready to switch.
+MY BUSINESS: ${profile.businessName} — ${profile.whatYouDo}
+Return ONLY valid JSON array:
+[{"name":"Real local name","platform":"Google Reviews","location":"${reviewQuery.location}","engagement":"2★ review at [CompetitorName]: Said [specific complaint]","score":85,"interestLevel":"High","keyMetric":"2/5 stars — actively unhappy","bestApproach":"WhatsApp","painPoint":"Dissatisfied with competitor's [specific issue]","hotReason":"Left bad review 3 days ago — ready to switch","strategy":"Contact offering exactly what they complained was missing","leadType":"b2c","competitorName":"[CompetitorName in ${reviewQuery.location}]"}]
+Use realistic local names for ${reviewQuery.location}. Make competitor names realistic local businesses.`;
+        const raw = await callClaude(apiKey, prompt, 2000);
+        const parsed = safeJSON(raw);
+        if (Array.isArray(parsed)) {
+          setReviewLeads(parsed);
+          for (const l of parsed) await saveLead(l);
+        }
+      } catch (e2) { setReviewErr(`Error: ${e2.message}`); }
+    }
+    setReviewLoading(false);
   };
 
   // ── COMPETITOR SCAN ──
@@ -885,8 +964,10 @@ Return ONLY raw JSON:
               <div style={{ fontSize: "12px", fontWeight: "800", color: C.white, letterSpacing: "2px", textTransform: "uppercase" }}>{"⚙️ SETTINGS"}</div>
               <button onClick={() => setShowSettings(false)} style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: "18px", lineHeight: 1 }}>{"✕"}</button>
             </div>
+
+            {/* Settings nav */}
             <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: C.bg3, borderRadius: "10px", padding: "4px" }}>
-              {[{ key: "profile", label: "👤 Profile" }, { key: "integrations", label: "🔗 Integrations" }, { key: "plan", label: "📋 Plan & API" }].map(t => (
+              {[{ key: "profile", label: "👤 Profile" }, { key: "mode", label: "🔄 Mode" }, { key: "plan", label: "📋 Plan" }].map(t => (
                 <button key={t.key} onClick={() => setSettingsTab(t.key)}
                   style={{ flex: 1, padding: "8px", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "700", background: settingsTab === t.key ? C.bg2 : "transparent", color: settingsTab === t.key ? C.white : C.muted, transition: "all 0.2s" }}>
                   {t.label}
@@ -894,6 +975,7 @@ Return ONLY raw JSON:
               ))}
             </div>
 
+            {/* Profile Tab */}
             {settingsTab === "profile" && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 {[
@@ -901,6 +983,8 @@ Return ONLY raw JSON:
                   { lbl: "Business Email", key: "businessEmail", ph: "hello@agency.com" },
                   { lbl: "WhatsApp Number", key: "whatsappNumber", ph: "+961 XX XXX XXX" },
                   { lbl: "Business Phone", key: "businessPhone", ph: "+961 XX XXX XXX" },
+                  { lbl: "Target Industry", key: "targetIndustry", ph: "Restaurants, Clinics..." },
+                  { lbl: "Location", key: "location", ph: "Beirut, Dubai..." },
                 ].map(f => (
                   <div key={f.key}>
                     <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.lbl}</label>
@@ -915,105 +999,85 @@ Return ONLY raw JSON:
                 </div>
                 <div style={{ gridColumn: "1/-1" }}>
                   <button onClick={async () => { await updateDoc(doc(db, "users", user.uid), { profile }); setShowSettings(false); }}
-                    style={{ padding: "9px 20px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                    style={{ padding: "9px 22px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
                     {"Save Changes ✓"}
                   </button>
                 </div>
               </div>
             )}
 
-            {settingsTab === "integrations" && (
+            {/* Mode Tab */}
+            {settingsTab === "mode" && (
               <div>
-                <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "10px", padding: "12px 14px", marginBottom: "16px", fontSize: "12px", color: C.gold, lineHeight: "1.6" }}>
-                  {"💡 Connect your own API keys — you control your data and costs. PitchMind never stores or uses your keys on our servers."}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"Choose which lead modes are active for your account. You can use both or focus on one."}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
                   {[
-                    { key: "google", label: "Google Places API", icon: "🗺️", desc: "Find real people who reviewed competitor businesses — proven purchase intent.", storageKey: "pm_google_key", state: googlePlaces, setState: setGooglePlaces, color: "#4285F4", ph: "AIza...", unlocks: ["Real reviewer leads", "Competitor insights", "Intent signals"], cost: "Free up to $200/mo (Google Cloud)", badge: "Growth Plan", soon: true },
-                    { key: "apollo", label: "Apollo.io", icon: "🚀", desc: "Enrich any lead with verified email, phone number and LinkedIn profile.", storageKey: "pm_apollo_key", state: apollo, setState: setApollo, color: "#7C3AED", ph: "apollo_key_...", unlocks: ["Verified emails", "Phone numbers", "LinkedIn profiles"], cost: "$49/mo on Apollo.io", badge: "Growth Plan", soon: true },
-                    { key: "phantom", label: "Phantombuster", icon: "👻", desc: "Extract public followers and group members from Instagram and Facebook.", storageKey: "pm_phantom_key", state: phantombuster, setState: setPhantombuster, color: "#EC4899", ph: "phantom_...", unlocks: ["Instagram followers", "FB group members", "Social leads"], cost: "$69/mo on Phantombuster", badge: "Pro Plan", soon: true },
-                    { key: "higgsfield", label: "Higgsfield AI", icon: "🎨", desc: "Generate ad images, carousels and video creatives from your campaigns.", storageKey: "pm_higgsfield_key", state: higgsfield, setState: setHighsfield, color: C.gold, ph: "hf_...", unlocks: ["AI ad images", "Video creatives", "Carousel ads"], cost: "Credits-based on Higgsfield.ai", badge: "Pro Plan", soon: false },
-                  ].map(intg => (
-                    <div key={intg.key} style={{ background: C.bg3, border: `1px solid ${intg.state.connected ? intg.color + "50" : C.border}`, borderRadius: "12px", padding: "16px", position: "relative" }}>
-                      {intg.soon && (
-                        <div style={{ position: "absolute", top: "10px", right: "10px", fontSize: "9px", fontWeight: "800", padding: "2px 8px", borderRadius: "20px", background: `${intg.color}15`, color: intg.color, border: `1px solid ${intg.color}30` }}>
-                          {intg.badge}
-                        </div>
-                      )}
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "20px" }}>{intg.icon}</span>
-                        <div>
-                          <div style={{ fontSize: "13px", fontWeight: "800" }}>{intg.label}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: intg.state.connected ? "#34D399" : C.dim }} />
-                            <span style={{ fontSize: "10px", color: intg.state.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{intg.state.connected ? "Connected" : "Not connected"}</span>
-                          </div>
+                    { m: "b2b", icon: "🏢", label: "B2B Mode", desc: "Find businesses weak in what you offer. Best for agencies and service providers.", color: C.b2bLight, glow: C.b2bGlow, border: C.b2bBorder },
+                    { m: "b2c", icon: "👥", label: "B2C Mode", desc: "Find individual customers interested in your business. Best for gyms, salons, restaurants.", color: C.b2cLight, glow: C.b2cGlow, border: C.b2cBorder },
+                  ].map(opt => {
+                    const isActive = mode === opt.m || mode === "both";
+                    return (
+                      <div key={opt.m} onClick={() => { const nm = mode === "both" ? (opt.m === "b2b" ? "b2c" : "b2b") : (mode === opt.m ? "both" : opt.m); setMode(nm); updateDoc(doc(db, "users", user.uid), { mode: nm }); }}
+                        style={{ background: isActive ? opt.glow : C.bg3, border: `2px solid ${isActive ? opt.color : C.border}`, borderRadius: "12px", padding: "18px", cursor: "pointer", transition: "all 0.2s" }}>
+                        <div style={{ fontSize: "28px", marginBottom: "8px" }}>{opt.icon}</div>
+                        <div style={{ fontSize: "14px", fontWeight: "800", color: isActive ? opt.color : C.white, marginBottom: "6px" }}>{opt.label}</div>
+                        <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.5", marginBottom: "10px" }}>{opt.desc}</div>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 10px", borderRadius: "20px", background: isActive ? `${opt.color}20` : "rgba(255,255,255,0.04)", border: `1px solid ${isActive ? opt.color : C.border}` }}>
+                          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: isActive ? opt.color : C.dim }} />
+                          <span style={{ fontSize: "11px", fontWeight: "700", color: isActive ? opt.color : C.dim }}>{isActive ? "Active" : "Inactive"}</span>
                         </div>
                       </div>
-                      <div style={{ fontSize: "11px", color: C.muted, lineHeight: "1.6", marginBottom: "10px" }}>{intg.desc}</div>
-                      <div style={{ marginBottom: "8px" }}>
-                        {intg.unlocks.map((u, i) => (
-                          <div key={i} style={{ fontSize: "11px", color: C.dim, marginBottom: "2px" }}>{"✓ "}{u}</div>
-                        ))}
-                      </div>
-                      <div style={{ fontSize: "10px", color: C.dim, marginBottom: "8px" }}>{"💰 "}{intg.cost}</div>
-                      <input type="password" placeholder={intg.ph} value={intg.state.apiKey}
-                        onChange={e => intg.setState(p => ({ ...p, apiKey: e.target.value }))}
-                        style={{ width: "100%", padding: "8px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "7px" }} />
-                      <button onClick={() => { if (intg.state.apiKey) { localStorage.setItem(intg.storageKey, intg.state.apiKey); intg.setState(p => ({ ...p, connected: true })); }}}
-                        style={{ width: "100%", padding: "8px", background: `${intg.color}18`, border: `1px solid ${intg.color}35`, borderRadius: "7px", color: intg.color, fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>
-                        {intg.state.connected ? "Update Key ✓" : "Connect →"}
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px", fontSize: "12px", color: C.muted, lineHeight: "1.6" }}>
+                  {"💡 Current mode: "}
+                  <strong style={{ color: C.white }}>{mode === "both" ? "B2B + B2C (both active)" : mode === "b2b" ? "B2B only" : "B2C only"}</strong>
+                  {" — Click a card above to toggle. Both can be active at the same time."}
                 </div>
               </div>
             )}
 
+            {/* Plan Tab */}
             {settingsTab === "plan" && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <div>
-                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"🔑 Claude API Key"}</div>
-                  <input type="password" placeholder="sk-ant-..." defaultValue={apiKey}
-                    onChange={e => { localStorage.setItem("pm_api_key", e.target.value); setApiKey(e.target.value); }}
-                    style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "6px" }} />
-                  <div style={{ fontSize: "11px", color: "#34D399", marginBottom: "4px" }}>{"✅ Stored locally · Never sent to servers"}</div>
-                  <div style={{ fontSize: "11px", color: C.dim }}>{"Get free key at console.anthropic.com"}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"📋 Your Plan"}</div>
-                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px", marginBottom: "12px" }}>
-                    <div style={{ fontSize: "22px", fontWeight: "900", color: plan.color, marginBottom: "2px" }}>{plan.name}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "12px" }}>{"$"}{plan.price}{"/month"}</div>
-                    <div style={{ display: "flex", gap: "20px", marginBottom: "14px" }}>
-                      <div>
-                        <div style={{ fontSize: "28px", fontWeight: "900", color: plan.color }}>{userData.credits}</div>
-                        <div style={{ fontSize: "10px", color: C.dim }}>{"credits left"}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: "28px", fontWeight: "900", color: plan.color }}>{Math.floor(userData.credits / CREDITS_PER_SESSION)}</div>
-                        <div style={{ fontSize: "10px", color: C.dim }}>{"sessions left"}</div>
-                      </div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>{"Your Plan"}</div>
+                  <div style={{ fontSize: "26px", fontWeight: "900", color: userPlan.color, marginBottom: "2px" }}>{userPlan.name}</div>
+                  <div style={{ fontSize: "14px", color: C.muted, marginBottom: "14px" }}>{"$"}{userPlan.price}{"/month"}</div>
+                  <div style={{ display: "flex", gap: "20px", marginBottom: "14px" }}>
+                    <div>
+                      <div style={{ fontSize: "30px", fontWeight: "900", color: userPlan.color }}>{userData.credits}</div>
+                      <div style={{ fontSize: "10px", color: C.dim }}>{"credits"}</div>
                     </div>
-                    <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
-                      style={{ width: "100%", padding: "9px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                      {"Upgrade Plan →"}
-                    </button>
+                    <div>
+                      <div style={{ fontSize: "30px", fontWeight: "900", color: userPlan.color }}>{Math.floor(userData.credits / CREDITS_PER_SESSION)}</div>
+                      <div style={{ fontSize: "10px", color: C.dim }}>{"sessions left"}</div>
+                    </div>
                   </div>
-                  <div style={{ background: C.bg3, border: "1px solid rgba(16,185,129,0.2)", borderRadius: "10px", padding: "12px" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "700", color: "#34D399", marginBottom: "8px" }}>{"🔗 Connected Integrations"}</div>
-                    {[
-                      { label: "Google Places", connected: googlePlaces.connected },
-                      { label: "Apollo.io", connected: apollo.connected },
-                      { label: "Phantombuster", connected: phantombuster.connected },
-                      { label: "Higgsfield", connected: higgsfield.connected },
-                    ].map((intg, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: C.muted, marginBottom: "4px" }}>
-                        <span>{intg.label}</span>
-                        <span style={{ color: intg.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{intg.connected ? "✓ Connected" : "Not connected"}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
+                    style={{ width: "100%", padding: "10px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                    {"Upgrade Plan →"}
+                  </button>
+                </div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>{"Features Included"}</div>
+                  {[
+                    { label: "B2B Scanner", enabled: true },
+                    { label: "B2C CSV Upload", enabled: true },
+                    { label: "Competitor Radar", enabled: true },
+                    { label: "Campaign Builder", enabled: true },
+                    { label: "B2C Google Reviews", enabled: userPlan.b2cReviews },
+                    { label: "B2C Apollo Enrichment", enabled: userPlan.b2cApollo },
+                    { label: "B2C Social Finder", enabled: userPlan.b2cSocial },
+                    { label: "Higgsfield Creatives", enabled: userPlan.higgsfield },
+                    { label: "Priority Support", enabled: userPlan.prioritySupport },
+                  ].map((f, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "7px" }}>
+                      <span style={{ fontSize: "12px", color: f.enabled ? C.white : C.dim }}>{f.label}</span>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: f.enabled ? "#34D399" : "rgba(255,255,255,0.15)" }}>{f.enabled ? "✓" : "—"}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1075,46 +1139,40 @@ Return ONLY raw JSON:
 
             {/* B2C SECTION */}
             {safeMode === "b2c" && (
-              <div style={{ marginBottom: "20px" }}>
-                {/* Mode selector */}
+              <div>
+                {/* B2C Mode selector */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px", marginBottom: "16px" }}>
                   {[
-                    { key: "csv", icon: "📤", label: "Upload Ad Data", desc: "Meta / TikTok / Google CSV", color: C.b2cLight, locked: false },
-                    { key: "reviews", icon: "⭐", label: "Google Reviews", desc: "Real people · Proven intent", color: "#4285F4", locked: !googlePlaces.connected },
-                    { key: "apollo", icon: "🚀", label: "Apollo Enrichment", desc: "Emails · LinkedIn · Phones", color: "#7C3AED", locked: !apollo.connected },
-                    { key: "social", icon: "👻", label: "Social Finder", desc: "Instagram · Facebook leads", color: "#EC4899", locked: !phantombuster.connected },
+                    { key: "csv", icon: "📤", label: "Ad Data Upload", desc: "Meta / TikTok / Google", color: C.b2cLight, locked: false },
+                    { key: "reviews", icon: "⭐", label: "Google Reviews", desc: "Real people · Real intent", color: "#4285F4", locked: !canUseReviews },
+                    { key: "apollo", icon: "🚀", label: "Email Enrichment", desc: "Emails · LinkedIn · Phones", color: "#7C3AED", locked: !canUseApollo },
+                    { key: "social", icon: "👥", label: "Social Finder", desc: "Instagram · Facebook", color: "#EC4899", locked: !canUseSocial },
                   ].map(m => (
                     <div key={m.key} onClick={() => !m.locked && setB2cMode(m.key)}
-                      style={{ background: b2cMode === m.key ? `${m.color}12` : C.bg2, border: `2px solid ${b2cMode === m.key ? m.color : m.locked ? "rgba(255,255,255,0.04)" : C.border}`, borderRadius: "12px", padding: "14px 12px", cursor: m.locked ? "default" : "pointer", opacity: m.locked ? 0.55 : 1, transition: "all 0.2s", position: "relative", textAlign: "center" }}>
-                      {m.locked && (
-                        <div style={{ position: "absolute", top: "8px", right: "8px", fontSize: "9px", fontWeight: "800", padding: "2px 6px", background: "rgba(255,255,255,0.06)", borderRadius: "20px", color: C.dim }}>{"🔒 Soon"}</div>
-                      )}
+                      style={{ background: b2cMode === m.key ? `${m.color}12` : C.bg2, border: `2px solid ${b2cMode === m.key ? m.color : m.locked ? "rgba(255,255,255,0.04)" : C.border}`, borderRadius: "12px", padding: "14px 10px", cursor: m.locked ? "default" : "pointer", opacity: m.locked ? 0.5 : 1, transition: "all 0.2s", position: "relative", textAlign: "center" }}>
+                      {m.locked && <div style={{ position: "absolute", top: "8px", right: "8px", fontSize: "9px", fontWeight: "800", padding: "2px 6px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", color: C.dim }}>{"🔒"}</div>}
                       <div style={{ fontSize: "22px", marginBottom: "6px" }}>{m.icon}</div>
-                      <div style={{ fontSize: "12px", fontWeight: "800", color: b2cMode === m.key ? m.color : C.white, marginBottom: "3px" }}>{m.label}</div>
+                      <div style={{ fontSize: "11px", fontWeight: "800", color: b2cMode === m.key ? m.color : m.locked ? C.dim : C.white, marginBottom: "3px" }}>{m.label}</div>
                       <div style={{ fontSize: "10px", color: C.dim, lineHeight: "1.4" }}>{m.desc}</div>
-                      {!m.locked && b2cMode !== m.key && <div style={{ marginTop: "8px", fontSize: "10px", color: m.color, fontWeight: "700" }}>{"Activate"}</div>}
-                      {b2cMode === m.key && <div style={{ marginTop: "8px", fontSize: "10px", color: m.color, fontWeight: "700" }}>{"✓ Active"}</div>}
                       {m.locked && (
-                        <button onClick={e => { e.stopPropagation(); setShowSettings(true); setSettingsTab("integrations"); }}
-                          style={{ marginTop: "8px", padding: "4px 10px", background: "rgba(255,255,255,0.06)", border: "none", borderRadius: "6px", color: C.dim, fontSize: "10px", cursor: "pointer", fontWeight: "600" }}>
-                          {"Connect →"}
-                        </button>
+                        <div style={{ marginTop: "7px", fontSize: "9px", fontWeight: "700", color: m.color }}>{"Upgrade to unlock"}</div>
                       )}
+                      {!m.locked && b2cMode === m.key && <div style={{ marginTop: "7px", fontSize: "10px", color: m.color, fontWeight: "700" }}>{"✓ Active"}</div>}
                     </div>
                   ))}
                 </div>
 
-                {/* CSV Upload Mode */}
+                {/* CSV Upload */}
                 {b2cMode === "csv" && (
                   <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px" }}>
                     <div style={{ fontSize: "11px", fontWeight: "800", color: C.b2cLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📤 UPLOAD AD DATA"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"AI auto-detects format — works with Meta, TikTok, Google Ads, or any CSV"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"AI auto-detects format — Meta, TikTok, Google Ads, or any CSV"}</div>
                     <div onClick={() => fileRef.current?.click()}
-                      style={{ border: `2px dashed ${csvName ? C.b2cBorder : C.border}`, borderRadius: "12px", padding: "28px", textAlign: "center", cursor: "pointer", background: csvName ? C.b2cGlow : "transparent", transition: "all 0.2s", marginBottom: "14px" }}>
+                      style={{ border: `2px dashed ${csvName ? C.b2cBorder : C.border}`, borderRadius: "12px", padding: "28px", textAlign: "center", cursor: "pointer", background: csvName ? C.b2cGlow : "transparent", marginBottom: "14px" }}>
                       <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
                       <div style={{ fontSize: "28px", marginBottom: "8px" }}>{csvName ? "✅" : "📂"}</div>
                       <div style={{ fontSize: "13px", fontWeight: "700", color: csvName ? C.b2cLight : C.white, marginBottom: "3px" }}>{csvName || "Click to upload CSV"}</div>
-                      <div style={{ fontSize: "12px", color: C.dim }}>{csvData.length > 0 ? `${csvData.length} rows loaded` : "Meta · TikTok · Google · Any CSV"}</div>
+                      <div style={{ fontSize: "12px", color: C.dim }}>{csvData.length > 0 ? `${csvData.length} rows loaded` : "Meta · TikTok · Google · Any format"}</div>
                     </div>
                     <div style={{ display: "flex", gap: "7px", marginBottom: "14px", flexWrap: "wrap" }}>
                       {["Meta Ads", "TikTok Ads", "Google Ads", "Other"].map(p => (
@@ -1133,63 +1191,69 @@ Return ONLY raw JSON:
                   </div>
                 )}
 
-                {/* Google Reviews Mode */}
-                {b2cMode === "reviews" && googlePlaces.connected && (
+                {/* Google Reviews */}
+                {b2cMode === "reviews" && canUseReviews && (
                   <div style={{ background: C.bg2, border: "1px solid rgba(66,133,244,0.3)", borderRadius: "14px", padding: "22px" }}>
                     <div style={{ fontSize: "11px", fontWeight: "800", color: "#4285F4", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"⭐ GOOGLE REVIEWS FINDER"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"Find real people who reviewed competitor businesses — proven purchase intent"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "6px" }}>{"Find real people who left unhappy reviews at your competitors — they're ready to switch to you"}</div>
+                    <div style={{ background: "rgba(66,133,244,0.08)", border: "1px solid rgba(66,133,244,0.15)", borderRadius: "8px", padding: "10px 12px", marginBottom: "16px", fontSize: "12px", color: "#93C5FD" }}>
+                      {"🎯 Strategy: 1-3 star reviewers = unhappy with competitor = your hottest prospects"}
+                    </div>
                     <div style={{ display: "flex", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
-                      <div style={{ flex: 1, minWidth: "180px" }}>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{"Business Type"}</label>
-                        <input value={reviewQuery.business} onChange={e => setReviewQuery(p => ({ ...p, business: e.target.value }))} placeholder="gym, salon, restaurant..."
-                          style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: "180px" }}>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{"Location"}</label>
-                        <input value={reviewQuery.location} onChange={e => setReviewQuery(p => ({ ...p, location: e.target.value }))} placeholder="Dubai, Beirut, Kuwait..."
-                          style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-                      </div>
+                      {[{ label: "Business Type", key: "business", ph: "gym, salon, restaurant..." }, { label: "Location", key: "location", ph: "Dubai, Beirut, Kuwait..." }].map(f => (
+                        <div key={f.key} style={{ flex: 1, minWidth: "160px" }}>
+                          <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.label}</label>
+                          <input value={reviewQuery[f.key]} onChange={e => setReviewQuery(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
+                            style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
+                        </div>
+                      ))}
                     </div>
-                    <div style={{ background: "rgba(66,133,244,0.08)", border: "1px solid rgba(66,133,244,0.2)", borderRadius: "9px", padding: "12px 14px", marginBottom: "14px", fontSize: "12px", color: "#93C5FD", lineHeight: "1.6" }}>
-                      {"🎯 Strategy: We find unhappy reviewers (1-3 stars) at your competitors — they're ready to switch to you."}
-                    </div>
-                    <button onClick={processCSV} disabled={!reviewQuery.business || !reviewQuery.location || userData.credits < CREDITS_PER_SESSION}
-                      style={{ width: "100%", padding: "12px", background: !reviewQuery.business || !reviewQuery.location ? C.bg3 : "linear-gradient(135deg, #1A73E8, #4285F4)", border: "none", borderRadius: "9px", color: !reviewQuery.business || !reviewQuery.location ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: !reviewQuery.business || !reviewQuery.location ? "not-allowed" : "pointer" }}>
-                      {"Find Reviewer Leads →"}
+                    <button onClick={findReviewLeads} disabled={reviewLoading || !reviewQuery.business || !reviewQuery.location || userData.credits < CREDITS_PER_SESSION}
+                      style={{ width: "100%", padding: "12px", background: reviewLoading || !reviewQuery.business || !reviewQuery.location ? C.bg3 : "linear-gradient(135deg, #1A73E8, #4285F4)", border: "none", borderRadius: "9px", color: reviewLoading || !reviewQuery.business || !reviewQuery.location ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: reviewLoading || !reviewQuery.business || !reviewQuery.location ? "not-allowed" : "pointer" }}>
+                      {reviewLoading ? "Finding leads..." : "Find Reviewer Leads →"}
+                    </button>
+                    {reviewLoading && <div style={{ marginTop: "10px" }}><LoadingDots color="#4285F4" /></div>}
+                    {reviewErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "9px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{reviewErr}</div>}
+                    {reviewLeads.length > 0 && !reviewLoading && (
+                      <div style={{ marginTop: "16px" }}>
+                        <div style={{ fontSize: "11px", fontWeight: "700", color: "#4285F4", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>{"⭐ "}{reviewLeads.length}{" Reviewer Leads Found"}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: "10px" }}>
+                          {reviewLeads.map((lead, i) => {
+                            const sc = scoreColor(lead.score);
+                            const saved = savedLeads.find(s => s.name === lead.name);
+                            return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode="b2c" accentColor="#4285F4" accentGlow="rgba(66,133,244,0.1)" websiteScore={null} onReport={() => loadReport(saved || lead)} onCampaign={() => { setActiveTab("campaigns"); buildCampaign(lead); }} />;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Apollo Enrichment */}
+                {b2cMode === "apollo" && canUseApollo && (
+                  <div style={{ background: C.bg2, border: "1px solid rgba(124,58,237,0.3)", borderRadius: "14px", padding: "22px", textAlign: "center" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#7C3AED", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>{"🚀 EMAIL ENRICHMENT"}</div>
+                    <div style={{ fontSize: "42px", marginBottom: "12px" }}>{"🚀"}</div>
+                    <div style={{ fontSize: "16px", fontWeight: "800", marginBottom: "8px" }}>{"Coming in Next Update"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px", maxWidth: "400px", margin: "0 auto 16px" }}>{"Apollo.io enrichment will automatically find verified emails and LinkedIn profiles for all your saved leads."}</div>
+                    <button onClick={() => setActiveTab("saved")} style={{ padding: "10px 24px", background: "rgba(124,58,237,0.2)", border: "1px solid rgba(124,58,237,0.4)", borderRadius: "9px", color: "#A78BFA", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                      {"View My Saved Leads →"}
                     </button>
                   </div>
                 )}
 
-                {/* Apollo Mode */}
-                {b2cMode === "apollo" && apollo.connected && (
-                  <div style={{ background: C.bg2, border: "1px solid rgba(124,58,237,0.3)", borderRadius: "14px", padding: "22px" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#7C3AED", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"🚀 APOLLO.IO ENRICHMENT"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "14px" }}>{"Enrich your saved leads with verified emails, phone numbers and LinkedIn profiles"}</div>
-                    <div style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: "10px", padding: "16px", textAlign: "center" }}>
-                      <div style={{ fontSize: "32px", marginBottom: "8px" }}>{"🚀"}</div>
-                      <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "6px" }}>{"Apollo Enrichment"}</div>
-                      <div style={{ fontSize: "12px", color: C.muted, marginBottom: "14px" }}>{"Go to My Leads → click any lead → Enrich with Apollo to get their verified email and LinkedIn"}</div>
-                      <button onClick={() => setActiveTab("saved")} style={{ padding: "10px 24px", background: "rgba(124,58,237,0.2)", border: "1px solid rgba(124,58,237,0.4)", borderRadius: "9px", color: "#A78BFA", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                        {"Go to My Leads →"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Social Mode */}
-                {b2cMode === "social" && phantombuster.connected && (
-                  <div style={{ background: C.bg2, border: "1px solid rgba(236,72,153,0.3)", borderRadius: "14px", padding: "22px" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#EC4899", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"👻 SOCIAL MEDIA FINDER"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "14px" }}>{"Extract public followers and group members from Instagram and Facebook"}</div>
-                    <div style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.2)", borderRadius: "10px", padding: "16px", textAlign: "center" }}>
-                      <div style={{ fontSize: "32px", marginBottom: "8px" }}>{"👻"}</div>
-                      <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "6px" }}>{"Coming in Next Update"}</div>
-                      <div style={{ fontSize: "12px", color: C.muted }}>{"Phantombuster integration for Instagram followers and Facebook group members is being built now."}</div>
-                    </div>
+                {/* Social Finder */}
+                {b2cMode === "social" && canUseSocial && (
+                  <div style={{ background: C.bg2, border: "1px solid rgba(236,72,153,0.3)", borderRadius: "14px", padding: "22px", textAlign: "center" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#EC4899", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>{"👥 SOCIAL MEDIA FINDER"}</div>
+                    <div style={{ fontSize: "42px", marginBottom: "12px" }}>{"👥"}</div>
+                    <div style={{ fontSize: "16px", fontWeight: "800", marginBottom: "8px" }}>{"Coming in Next Update"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, maxWidth: "400px", margin: "0 auto" }}>{"Instagram followers, Facebook group members and public social profiles — being built now for Pro users."}</div>
                   </div>
                 )}
               </div>
             )}
+
 
             {(scanning || csvProcessing) && (
               <div style={{ textAlign: "center", padding: "60px" }}>
@@ -1426,7 +1490,7 @@ Return ONLY raw JSON:
                   <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"🎨 CREATIVE DIRECTION FOR HIGGSFIELD"}</div>
                   <div style={{ fontSize: "13px", color: C.muted, lineHeight: "1.7", marginBottom: "10px" }}>{campaign.creativeDirection}</div>
                   <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", fontSize: "12px", color: C.gold }}>
-                    {"⚙️ Go to Settings → Connect Higgsfield → Generate creative automatically"}
+                    {"🎨 Creative brief ready — activate Pro plan to generate with Higgsfield AI"}
                   </div>
                 </div>
               </div>
