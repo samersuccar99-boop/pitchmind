@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, deleteDoc, query, where } from "firebase/firestore";
@@ -116,7 +116,7 @@ function LoadingDots({ color = C.b2bLight }) {
 }
 
 // Error Boundary
-class ErrorBoundary extends (require("react").Component) {
+class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(e) { return { error: e }; }
   render() {
@@ -1203,14 +1203,7 @@ Return ONLY raw JSON:
                     <div style={{ fontSize: "13px", color: C.muted, marginTop: "3px" }}>{campaign.objective} · {campaign.timeline} · {campaign.totalBudget}</div>
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => { const t = `${campaign.campaignName}
-
-Caption:
-${campaign.caption}
-
-Hashtags: ${(campaign.hashtags||[]).join(" ")}
-
-CTA: ${campaign.callToAction}`; navigator.clipboard?.writeText(t); }}
+                    <button onClick={() => { const t = [campaign.campaignName, "\n\nCaption:\n" + campaign.caption, "\n\nHashtags: " + (campaign.hashtags||[]).join(" "), "\n\nCTA: " + campaign.callToAction].join(""); navigator.clipboard?.writeText(t); }}
                       style={{ padding: "8px 14px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>📋 Copy</button>
                     <button onClick={() => setCampaign(null)} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, fontSize: "12px", cursor: "pointer" }}>Clear</button>
                   </div>
