@@ -646,7 +646,7 @@ Return ONLY raw JSON:
         <div style={{ textAlign: "center" }}>
           <button onClick={doPlan}
             style={{ padding: "14px 56px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2c})`, border: "none", borderRadius: "12px", color: "#fff", fontSize: "15px", fontWeight: "800", cursor: "pointer", boxShadow: "0 4px 24px rgba(37,99,235,0.3)", letterSpacing: "0.5px" }}>
-            Start with {PLANS[selPlan].name} →
+            Start with {PLANS[selPlan].name}{" →"}
           </button>
           <div style={{ fontSize: "12px", color: C.dim, marginTop: "12px" }}>Cancel anytime. No setup fees.</div>
         </div>
@@ -703,7 +703,7 @@ Return ONLY raw JSON:
         {apiErr && <div style={{ color: "#F87171", fontSize: "13px", marginBottom: "12px" }}>{apiErr}</div>}
         <button onClick={doApiKey}
           style={{ width: "100%", padding: "13px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "10px", color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>
-          Continue →
+          {"Continue →"}
         </button>
         <div style={{ marginTop: "14px", fontSize: "11px", color: C.dim, textAlign: "center" }}>🔒 Stored locally. Never sent to our servers.</div>
       </div>
@@ -773,7 +773,7 @@ Return ONLY raw JSON:
         {profileErr && <div style={{ color: "#F87171", fontSize: "13px", marginBottom: "14px" }}>{profileErr}</div>}
         <button onClick={doProfile}
           style={{ width: "100%", padding: "13px", background: `linear-gradient(135deg, ${mode === "b2b" ? C.b2b : C.b2c}, ${mode === "b2b" ? C.b2bLight : C.b2cLight})`, border: "none", borderRadius: "10px", color: "#fff", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}>
-          Launch PitchMind →
+          {"Launch PitchMind →"}
         </button>
       </div>
     </div>
@@ -925,7 +925,7 @@ Return ONLY raw JSON:
                   <div style={{ fontSize: "12px", color: C.muted, marginBottom: "10px" }}>{userData.credits} credits · {Math.floor(userData.credits / CREDITS_PER_SESSION)} sessions left</div>
                   <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
                     style={{ padding: "7px 14px", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "7px", color: C.gold, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                    Upgrade Plan →
+                    {"Upgrade Plan →"}
                   </button>
                 </div>
               </div>
@@ -1190,7 +1190,7 @@ Return ONLY raw JSON:
             <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
               <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>📣 CAMPAIGN BUILDER</div>
               <div style={{ fontSize: "13px", color: C.muted }}>
-                Go to <strong style={{ color: C.campLight }}>Scan Leads</strong> or <strong style={{ color: C.campLight }}>My Leads</strong>, click <strong style={{ color: C.campLight }}>📣</strong> on any lead card to build a full campaign.
+                {"Go to "}<strong style={{ color: C.campLight }}>{"Scan Leads"}</strong>{" or "}<strong style={{ color: C.campLight }}>{"My Leads"}</strong>{", click "}<strong style={{ color: C.campLight }}>{"📣"}</strong>{" on any lead card to build a full campaign."}
               </div>
             </div>
             {campaignLoading && <div style={{ textAlign: "center", padding: "50px" }}><LoadingDots color={C.campLight} /><div style={{ fontSize: "14px", fontWeight: "700", marginTop: "14px" }}>Building campaign...</div></div>}
@@ -1250,7 +1250,7 @@ Return ONLY raw JSON:
                   <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>🎨 CREATIVE DIRECTION FOR HIGGSFIELD</div>
                   <div style={{ fontSize: "13px", color: C.muted, lineHeight: "1.7", marginBottom: "10px" }}>{campaign.creativeDirection}</div>
                   <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", fontSize: "12px", color: C.gold }}>
-                    ⚙️ Go to Settings → Connect Higgsfield → Generate creative automatically
+                    {"⚙️ Go to Settings → Connect Higgsfield → Generate creative automatically"}
                   </div>
                 </div>
               </div>
@@ -1558,7 +1558,7 @@ function SavedLeadCard({ lead, sc, accentColor, websiteScore, onReport, onStatus
               </div>
             ) : lead.website && lead.website !== "No website" && (
               <button onClick={onScoreWebsite} style={{ marginTop: "4px", fontSize: "10px", color: accentColor, background: "transparent", border: `1px solid ${accentColor}40`, borderRadius: "6px", padding: "2px 8px", cursor: "pointer" }}>
-                Score website →
+                {"Score website →"}
               </button>
             )}
           </>
