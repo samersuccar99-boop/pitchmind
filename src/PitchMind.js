@@ -531,8 +531,8 @@ Return ONLY raw JSON:
   const doLogout = async () => { await signOut(auth); setLeads([]); setSavedLeads([]); setScreen("login"); };
 
   const brand = brandSettings;
-  const appName = isWhiteLabel && brand.name !== "PitchMind" ? brand.name : "PITCHMIND";
-  const primaryColor = isWhiteLabel && brand.color ? brand.color : C.b2bLight;
+  const appName = "PITCHMIND";
+  const primaryColor = C.b2bLight;
 
   if (loading) return (
     <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter,sans-serif" }}>
@@ -742,7 +742,7 @@ Return ONLY raw JSON:
         ))}
         {/* Outreach */}
         <div style={{ background: C.bg3, border: `1px solid rgba(245,158,11,0.2)`, borderRadius: "12px", padding: "14px", marginBottom: "14px" }}>
-          <div style={{ fontSize: "10px", fontWeight: "700", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>💬 OUTREACH — enables one-click WhatsApp & Email</div>
+          <div style={{ fontSize: "10px", fontWeight: "700", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>{"💬 OUTREACH — enables one-click WhatsApp & Email"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             <div>
               <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.muted, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Business Email</label>
@@ -801,8 +801,8 @@ Return ONLY raw JSON:
       {/* HEADER */}
       <div style={{ padding: "0 28px", height: "58px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(8,11,15,0.96)", borderBottom: `1px solid ${C.border}`, backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, boxShadow: `0 1px 0 ${accentColor}30` }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div onClick={() => setScreen("dashboard")} style={{ fontSize: "15px", fontWeight: "900", letterSpacing: "3px", color: isWhiteLabel ? brand.color : "transparent", background: isWhiteLabel ? "none" : `linear-gradient(135deg, ${C.b2bLight}, ${C.b2cLight})`, WebkitBackgroundClip: isWhiteLabel ? "none" : "text", WebkitTextFillColor: isWhiteLabel ? brand.color : "transparent", cursor: "pointer" }}>
-            {isWhiteLabel && brand.logoUrl ? <img src={brand.logoUrl} alt="" style={{ height: "28px", objectFit: "contain" }} /> : appName}
+          <div onClick={() => setScreen("dashboard")} style={{ fontSize: "15px", fontWeight: "900", letterSpacing: "3px", background: `linear-gradient(135deg, ${C.b2bLight}, ${C.b2cLight})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", cursor: "pointer" }}>
+            {"PITCHMIND"}
           </div>
           <div style={{ padding: "3px 10px", background: safeMode === "b2b" ? C.b2bGlow : C.b2cGlow, border: `1px solid ${accentBorder}`, borderRadius: "20px", fontSize: "10px", fontWeight: "800", color: accentColor, letterSpacing: "1px", textTransform: "uppercase" }}>
             {safeMode === "b2b" ? "🏢 B2B" : "👥 B2C"}
@@ -820,11 +820,11 @@ Return ONLY raw JSON:
           <div style={{ padding: "4px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "10px", fontWeight: "700", color: C.gold, letterSpacing: "1px", textTransform: "uppercase" }}>{plan.name}</div>
           <button onClick={() => { const nm = safeMode === "b2b" ? "b2c" : "b2b"; setMode(nm); updateDoc(doc(db, "users", user.uid), { mode: nm }); }}
             style={{ padding: "5px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
-            Switch to {safeMode === "b2b" ? "B2C" : "B2B"}
+            {"Switch to "}{safeMode === "b2b" ? "B2C" : "B2B"}
           </button>
           <button onClick={() => setShowSettings(s => !s)}
             style={{ padding: "5px 10px", background: showSettings ? "rgba(255,255,255,0.06)" : C.bg2, border: `1px solid ${showSettings ? "rgba(255,255,255,0.12)" : C.border}`, borderRadius: "8px", color: showSettings ? C.white : C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
-            ⚙️ Settings
+            {"⚙️ Settings"}
           </button>
           <button onClick={doLogout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.dim, cursor: "pointer", fontSize: "11px" }}>Logout</button>
         </div>
@@ -837,13 +837,13 @@ Return ONLY raw JSON:
         {/* LOW CREDITS WARNING */}
         {userData.credits < CREDITS_PER_SESSION && userData.credits > 0 && (
           <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "12px", padding: "12px 18px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#FCD34D" }}>
-            ⚠️ Not enough credits for a full session ({userData.credits} remaining, need {CREDITS_PER_SESSION})
+            {"⚠️ Not enough credits for a full session ("}{userData.credits}{" remaining, need "}{CREDITS_PER_SESSION}{")"}
             <button onClick={() => setScreen("plan")} style={{ padding: "5px 12px", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "8px", color: "#FCD34D", cursor: "pointer", fontSize: "11px", fontWeight: "700" }}>Upgrade →</button>
           </div>
         )}
         {userData.credits === 0 && (
           <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "12px 18px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#F87171" }}>
-            ❌ No credits remaining
+            {"❌ No credits remaining"}
             <button onClick={() => setScreen("plan")} style={{ padding: "5px 12px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", color: "#F87171", cursor: "pointer", fontSize: "11px", fontWeight: "700" }}>Upgrade Now →</button>
           </div>
         )}
@@ -870,13 +870,13 @@ Return ONLY raw JSON:
         {showSettings && (
           <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px", marginBottom: "20px", animation: "fadeUp 0.2s ease" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-              <div style={{ fontSize: "12px", fontWeight: "800", color: C.white, letterSpacing: "2px", textTransform: "uppercase" }}>⚙️ SETTINGS</div>
+              <div style={{ fontSize: "12px", fontWeight: "800", color: C.white, letterSpacing: "2px", textTransform: "uppercase" }}>{"⚙️ SETTINGS"}</div>
               <button onClick={() => setShowSettings(false)} style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: "18px", lineHeight: 1 }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" }}>
               {/* Profile outreach */}
               <div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>📞 Outreach Info</div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"📞 Outreach Info"}</div>
                 {[
                   { lbl: "Business Email", key: "businessEmail", ph: "hello@agency.com" },
                   { lbl: "WhatsApp Number", key: "whatsappNumber", ph: "+961 XX XXX XXX" },
@@ -890,18 +890,18 @@ Return ONLY raw JSON:
                 ))}
                 <button onClick={async () => { await updateDoc(doc(db, "users", user.uid), { profile }); setShowSettings(false); }}
                   style={{ padding: "8px 16px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "7px", color: "#fff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                  Save Changes ✓
+                  {"Save Changes ✓"}
                 </button>
               </div>
               {/* Higgsfield */}
               <div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>🎨 Higgsfield Creative</div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"🎨 Higgsfield Creative"}</div>
                 <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px", marginBottom: "10px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
                     <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: higgsfield.connected ? "#34D399" : C.dim }} />
                     <span style={{ fontSize: "12px", color: higgsfield.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{higgsfield.connected ? "Connected ✓" : "Not connected"}</span>
                   </div>
-                  <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "10px" }}>Generate ad images, carousels & reels directly from campaigns.</div>
+                  <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "10px" }}>{"Generate ad images, carousels & reels directly from campaigns."}</div>
                   <input type="password" placeholder="Higgsfield API Key" value={higgsfield.apiKey}
                     onChange={e => setHighsfield(p => ({ ...p, apiKey: e.target.value }))}
                     style={{ width: "100%", padding: "9px 11px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "8px" }} />
@@ -918,8 +918,8 @@ Return ONLY raw JSON:
                 <input type="password" placeholder="sk-ant-..." defaultValue={apiKey}
                   onChange={e => { localStorage.setItem("pm_api_key", e.target.value); setApiKey(e.target.value); }}
                   style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "6px" }} />
-                <div style={{ fontSize: "11px", color: "#34D399", marginBottom: "16px" }}>✅ Stored locally · Never sent to servers</div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>📋 Your Plan</div>
+                <div style={{ fontSize: "11px", color: "#34D399", marginBottom: "16px" }}>{"✅ Stored locally · Never sent to servers"}</div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>{"📋 Your Plan"}</div>
                 <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px" }}>
                   <div style={{ fontSize: "16px", fontWeight: "800", color: PLANS[userData.plan]?.color || C.b2bLight, marginBottom: "4px" }}>{PLANS[userData.plan]?.name || "Starter"} — ${PLANS[userData.plan]?.price || 99}/mo</div>
                   <div style={{ fontSize: "12px", color: C.muted, marginBottom: "10px" }}>{userData.credits} credits · {Math.floor(userData.credits / CREDITS_PER_SESSION)} sessions left</div>
@@ -960,7 +960,7 @@ Return ONLY raw JSON:
             {/* B2B SCAN */}
             {safeMode === "b2b" && (
               <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
-                <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "16px" }}>⚡ SCAN FOR HOT LEADS</div>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "16px" }}>{"⚡ SCAN FOR HOT LEADS"}</div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
                   {[
                     { label: "Target Industry", key: "targetIndustry", ph: "Restaurants, Clinics, Real Estate..." },
@@ -980,7 +980,7 @@ Return ONLY raw JSON:
                 {scanProgress && <div style={{ marginTop: "12px", fontSize: "12px", color: accentColor, display: "flex", alignItems: "center", gap: "8px" }}><LoadingDots color={accentColor} />{scanProgress}</div>}
                 {scanErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "10px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{scanErr}</div>}
                 {savedLeads.length > 0 && (
-                  <button onClick={() => exportToCSV(savedLeads)} style={{ marginTop: "14px", padding: "7px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>📊 Export All Leads CSV</button>
+                  <button onClick={() => exportToCSV(savedLeads)} style={{ marginTop: "14px", padding: "7px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>{"📊 Export All Leads CSV"}</button>
                 )}
               </div>
             )}
@@ -988,8 +988,8 @@ Return ONLY raw JSON:
             {/* B2C UPLOAD */}
             {safeMode === "b2c" && (
               <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "26px", marginBottom: "24px" }}>
-                <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>📤 UPLOAD YOUR AD DATA</div>
-                <div style={{ fontSize: "13px", color: C.muted, marginBottom: "20px" }}>AI auto-detects format — works with Meta, TikTok, Google Ads, or any CSV</div>
+                <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📤 UPLOAD YOUR AD DATA"}</div>
+                <div style={{ fontSize: "13px", color: C.muted, marginBottom: "20px" }}>{"AI auto-detects format — works with Meta, TikTok, Google Ads, or any CSV"}</div>
                 <div onClick={() => fileRef.current?.click()}
                   style={{ border: `2px dashed ${csvName ? accentBorder : C.border}`, borderRadius: "14px", padding: "36px", textAlign: "center", cursor: "pointer", background: csvName ? accentGlow : "transparent", transition: "all 0.2s", marginBottom: "16px" }}>
                   <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
@@ -1031,7 +1031,7 @@ Return ONLY raw JSON:
             {leads.length > 0 && !scanning && !csvProcessing && (
               <>
                 <div style={{ fontSize: "12px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "14px" }}>
-                  ⚡ {leads.length} Leads Found — Auto-saved ✅ — Reports included in this session
+                  {"⚡ "}{leads.length}{" Leads Found — Auto-saved ✅ — Reports included in this session"}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px,1fr))", gap: "14px" }}>
                   {[...leads].sort((a, b) => b.score - a.score).map((lead, i) => {
@@ -1089,13 +1089,13 @@ Return ONLY raw JSON:
                 ))}
               </div>
               {savedLeads.length > 0 && (
-                <button onClick={() => exportToCSV(savedLeads)} style={{ padding: "6px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>📊 Export CSV</button>
+                <button onClick={() => exportToCSV(savedLeads)} style={{ padding: "6px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>{"📊 Export CSV"}</button>
               )}
             </div>
 
             {savedLeads.length === 0 ? (
               <div style={{ textAlign: "center", padding: "70px 24px" }}>
-                <div style={{ fontSize: "48px", marginBottom: "14px" }}>💾</div>
+                <div style={{ fontSize: "48px", marginBottom: "14px" }}>{"💾"}</div>
                 <div style={{ fontSize: "20px", fontWeight: "800", marginBottom: "8px" }}>NO SAVED LEADS YET</div>
                 <div style={{ fontSize: "13px", color: C.dim, marginBottom: "20px" }}>Run a scan and leads will be saved here automatically</div>
                 <button onClick={() => setActiveTab("scan")} style={{ padding: "11px 28px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>Start Scanning →</button>
@@ -1124,14 +1124,13 @@ Return ONLY raw JSON:
             )}
           </>
         )}
-      </div>
 
         {/* ── COMPETITOR TAB ── */}
         {activeTab === "competitors" && (
           <>
             <div style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
-              <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>🕵️ COMPETITOR RADAR</div>
-              <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>Analyze top competitors and find their weaknesses</div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"🕵️ COMPETITOR RADAR"}</div>
+              <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"Analyze top competitors and find their weaknesses"}</div>
               <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
                 {[{ label: "Industry / Business Type", key: "industry", ph: "Web design agencies, Marketing firms..." }, { label: "Location", key: "location", ph: "Dubai, Beirut, Kuwait..." }].map(f => (
                   <div key={f.key} style={{ flex: 1, minWidth: "180px" }}>
@@ -1176,7 +1175,7 @@ Return ONLY raw JSON:
               </div>
             ) : !compScanning && (
               <div style={{ textAlign: "center", padding: "60px" }}>
-                <div style={{ fontSize: "46px", marginBottom: "12px" }}>🕵️</div>
+                <div style={{ fontSize: "46px", marginBottom: "12px" }}>{"🕵️"}</div>
                 <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>KNOW YOUR COMPETITION</div>
                 <div style={{ fontSize: "13px", color: C.dim }}>Analyze top competitors · Find their weaknesses · Exploit their gaps</div>
               </div>
@@ -1188,7 +1187,7 @@ Return ONLY raw JSON:
         {activeTab === "campaigns" && (
           <>
             <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
-              <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>📣 CAMPAIGN BUILDER</div>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📣 CAMPAIGN BUILDER"}</div>
               <div style={{ fontSize: "13px", color: C.muted }}>
                 {"Go to "}<strong style={{ color: C.campLight }}>{"Scan Leads"}</strong>{" or "}<strong style={{ color: C.campLight }}>{"My Leads"}</strong>{", click "}<strong style={{ color: C.campLight }}>{"📣"}</strong>{" on any lead card to build a full campaign."}
               </div>
@@ -1198,40 +1197,44 @@ Return ONLY raw JSON:
               <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "24px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
                   <div>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>FOR: {campaign.leadName}</div>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>{"FOR: "}{campaign.leadName}</div>
                     <div style={{ fontSize: "20px", fontWeight: "800" }}>{campaign.campaignName}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginTop: "3px" }}>{campaign.objective} · {campaign.timeline} · {campaign.totalBudget}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginTop: "3px" }}>{campaign.objective}{" · "}{campaign.timeline}{" · "}{campaign.totalBudget}</div>
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button onClick={() => { const t = [campaign.campaignName, "\n\nCaption:\n" + campaign.caption, "\n\nHashtags: " + (campaign.hashtags||[]).join(" "), "\n\nCTA: " + campaign.callToAction].join(""); navigator.clipboard?.writeText(t); }}
-                      style={{ padding: "8px 14px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>📋 Copy</button>
-                    <button onClick={() => setCampaign(null)} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, fontSize: "12px", cursor: "pointer" }}>Clear</button>
+                      style={{ padding: "8px 14px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>{"📋 Copy"}</button>
+                    <button onClick={() => setCampaign(null)} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, fontSize: "12px", cursor: "pointer" }}>{"Clear"}</button>
                   </div>
                 </div>
                 {(campaign.platforms || []).map((p, i) => (
                   <div key={i} style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px", marginBottom: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                      <div style={{ fontSize: "14px", fontWeight: "800" }}>📱 {p.platform} — {p.format}</div>
-                      <div style={{ fontSize: "12px", color: C.campLight, fontWeight: "700" }}>{p.budget}/day · {p.duration}</div>
+                      <div style={{ fontSize: "14px", fontWeight: "800" }}>{"📱 "}{p.platform}{" — "}{p.format}</div>
+                      <div style={{ fontSize: "12px", color: C.campLight, fontWeight: "700" }}>{p.budget}{"/day · "}{p.duration}</div>
                     </div>
                     {p.audience && (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                        <div><div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>Targeting</div>
-                          <div style={{ fontSize: "12px", color: C.muted }}>📍 {p.audience.location}</div>
-                          <div style={{ fontSize: "12px", color: C.muted }}>👤 {p.audience.age}</div></div>
-                        <div><div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>Interests</div>
-                          {(p.audience.interests || []).map((int, j) => <div key={j} style={{ fontSize: "12px", color: C.muted }}>• {int}</div>)}</div>
+                        <div>
+                          <div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>{"Targeting"}</div>
+                          <div style={{ fontSize: "12px", color: C.muted }}>{"📍 "}{p.audience.location}</div>
+                          <div style={{ fontSize: "12px", color: C.muted }}>{"👤 "}{p.audience.age}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>{"Interests"}</div>
+                          {(p.audience.interests || []).map((int, j) => <div key={j} style={{ fontSize: "12px", color: C.muted }}>{"• "}{int}</div>)}
+                        </div>
                       </div>
                     )}
                   </div>
                 ))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                   <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
-                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>⚡ HOOK</div>
+                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"⚡ HOOK"}</div>
                     <div style={{ fontSize: "14px", fontWeight: "700" }}>{campaign.hook}</div>
                   </div>
                   <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
-                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>🎯 CTA</div>
+                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"🎯 CTA"}</div>
                     <div style={{ fontSize: "14px", fontWeight: "700" }}>{campaign.callToAction}</div>
                   </div>
                 </div>
@@ -1247,7 +1250,7 @@ Return ONLY raw JSON:
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>{(campaign.hashtags || []).map((h, i) => <span key={i} style={{ padding: "3px 10px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "20px", fontSize: "12px", color: C.campLight }}>{h}</span>)}</div>
                 </div>
                 <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>🎨 CREATIVE DIRECTION FOR HIGGSFIELD</div>
+                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"🎨 CREATIVE DIRECTION FOR HIGGSFIELD"}</div>
                   <div style={{ fontSize: "13px", color: C.muted, lineHeight: "1.7", marginBottom: "10px" }}>{campaign.creativeDirection}</div>
                   <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", fontSize: "12px", color: C.gold }}>
                     {"⚙️ Go to Settings → Connect Higgsfield → Generate creative automatically"}
@@ -1257,10 +1260,10 @@ Return ONLY raw JSON:
             )}
             {!campaign && !campaignLoading && (
               <div style={{ textAlign: "center", padding: "60px" }}>
-                <div style={{ fontSize: "46px", marginBottom: "12px" }}>📣</div>
-                <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>BUILD A CAMPAIGN</div>
-                <div style={{ fontSize: "13px", color: C.dim, marginBottom: "24px" }}>Click 📣 on any lead card to generate a full ad campaign</div>
-                <button onClick={() => setActiveTab("scan")} style={{ padding: "10px 24px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>→ Find a Lead First</button>
+                <div style={{ fontSize: "46px", marginBottom: "12px" }}>{"📣"}</div>
+                <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>{"BUILD A CAMPAIGN"}</div>
+                <div style={{ fontSize: "13px", color: C.dim, marginBottom: "24px" }}>{"Click 📣 on any lead card to generate a full ad campaign"}</div>
+                <button onClick={() => setActiveTab("scan")} style={{ padding: "10px 24px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>{"→ Find a Lead First"}</button>
               </div>
             )}
           </>
@@ -1319,7 +1322,7 @@ Return ONLY raw JSON:
               {/* ONE-CLICK OUTREACH */}
               {selectedLead.report && (
                 <div style={{ background: C.bg3, border: "1px solid rgba(245,158,11,0.25)", borderRadius: "12px", padding: "14px", marginBottom: "14px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>💬 ONE-CLICK OUTREACH</div>
+                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>{"💬 ONE-CLICK OUTREACH"}</div>
                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
                     {selectedLead.report.whatsappMessage && (
                       <button onClick={() => {
@@ -1413,7 +1416,7 @@ Return ONLY raw JSON:
           <div style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "20px", padding: "32px", maxWidth: "700px", width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
             <button onClick={() => setSelectedComp(null)}
               style={{ position: "absolute", top: "14px", right: "14px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, width: "30px", height: "30px", cursor: "pointer", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-            <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>🕵️ COMPETITOR DEEP ANALYSIS</div>
+            <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"🕵️ COMPETITOR DEEP ANALYSIS"}</div>
             <div style={{ fontSize: "19px", fontWeight: "800", marginBottom: "3px" }}>{selectedComp.name}</div>
             <div style={{ fontSize: "12px", color: C.muted, marginBottom: "20px" }}>{selectedComp.marketPosition} · Strength {selectedComp.strength}/100</div>
             {selectedComp.loading && <div style={{ textAlign: "center", padding: "36px" }}><LoadingDots color={C.compLight} /><div style={{ color: C.muted, marginTop: "10px", fontSize: "13px" }}>Analyzing...</div></div>}
@@ -1467,7 +1470,7 @@ function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, websiteScore
         <div style={{ marginBottom: "8px" }}>
           {lead.phone && <div style={{ fontSize: "11px", color: C.muted, marginBottom: "2px" }}>📞 {lead.phone}</div>}
           {lead.website === "No website" ? (
-            <div style={{ fontSize: "11px", color: "#F87171", marginBottom: "2px" }}>🌐 ❌ No website</div>
+            <div style={{ fontSize: "11px", color: "#F87171", marginBottom: "2px" }}>{"🌐 ❌ No website"}</div>
           ) : lead.website ? (
             <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: "11px", color: accentColor, marginBottom: "2px", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1505,7 +1508,7 @@ function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, websiteScore
       )}
 
       <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "12px", flexGrow: 1 }}>{lead.painPoint}</div>
-      {saved && <div style={{ fontSize: "10px", color: "#34D399", marginBottom: "6px", fontWeight: "600" }}>✅ Saved · Reports included in session</div>}
+      {saved && <div style={{ fontSize: "10px", color: "#34D399", marginBottom: "6px", fontWeight: "600" }}>{"✅ Saved · Reports included in session"}</div>}
 
       <div style={{ display: "flex", gap: "6px" }}>
         <button onClick={onReport}
@@ -1549,7 +1552,7 @@ function SavedLeadCard({ lead, sc, accentColor, websiteScore, onReport, onStatus
         {!isB2C ? (
           <>
             {lead.phone && <div style={{ fontSize: "11px", color: C.muted, marginBottom: "2px" }}>📞 {lead.phone}</div>}
-            {lead.website === "No website" ? <div style={{ fontSize: "11px", color: "#F87171", marginBottom: "2px" }}>🌐 ❌ No website</div>
+            {lead.website === "No website" ? <div style={{ fontSize: "11px", color: "#F87171", marginBottom: "2px" }}>{"🌐 ❌ No website"}</div>
               : lead.website ? <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: accentColor, marginBottom: "2px", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>🌐 {lead.website.replace(/https?:\/\//, "")} ↗</a> : null}
             {lead.rating && <div style={{ fontSize: "11px", color: "#FCD34D" }}>⭐ {lead.rating}/5</div>}
             {websiteScore ? (
