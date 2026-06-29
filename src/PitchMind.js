@@ -162,7 +162,13 @@ function PitchMindApp() {
   const [campaign, setCampaign] = useState(null);
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [higgsfield, setHighsfield] = useState({ apiKey: "", connected: false });
+  const [googlePlaces, setGooglePlaces] = useState({ apiKey: "", connected: false });
+  const [apollo, setApollo] = useState({ apiKey: "", connected: false });
+  const [phantombuster, setPhantombuster] = useState({ apiKey: "", connected: false });
+  const [b2cMode, setB2cMode] = useState("csv"); // csv | reviews | apollo | social
+  const [reviewQuery, setReviewQuery] = useState({ business: "", location: "" });
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("profile"); // profile | integrations | plan
   const [brandSettings, setBrandSettings] = useState({ name: "PitchMind", color: C.b2bLight, logoUrl: "", tagline: "Find the lead. Win the deal." });
   const [showBrand, setShowBrand] = useState(false);
   const [websiteScores, setWebsiteScores] = useState({});
@@ -177,6 +183,12 @@ function PitchMindApp() {
   useEffect(() => {
     const hk = localStorage.getItem("pm_higgsfield_key");
     if (hk) setHighsfield({ apiKey: hk, connected: true });
+    const gk = localStorage.getItem("pm_google_key");
+    if (gk) setGooglePlaces({ apiKey: gk, connected: true });
+    const ak = localStorage.getItem("pm_apollo_key");
+    if (ak) setApollo({ apiKey: ak, connected: true });
+    const pk = localStorage.getItem("pm_phantom_key");
+    if (pk) setPhantombuster({ apiKey: pk, connected: true });
   }, []);
 
   useEffect(() => {
@@ -868,70 +880,146 @@ Return ONLY raw JSON:
 
         {/* SETTINGS PANEL */}
         {showSettings && (
-          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px", marginBottom: "20px", animation: "fadeUp 0.2s ease" }}>
+          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px", marginBottom: "20px", animation: "fadeUp 0.2s ease" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
               <div style={{ fontSize: "12px", fontWeight: "800", color: C.white, letterSpacing: "2px", textTransform: "uppercase" }}>{"⚙️ SETTINGS"}</div>
-              <button onClick={() => setShowSettings(false)} style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: "18px", lineHeight: 1 }}>✕</button>
+              <button onClick={() => setShowSettings(false)} style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: "18px", lineHeight: 1 }}>{"✕"}</button>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" }}>
-              {/* Profile outreach */}
-              <div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"📞 Outreach Info"}</div>
+            <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: C.bg3, borderRadius: "10px", padding: "4px" }}>
+              {[{ key: "profile", label: "👤 Profile" }, { key: "integrations", label: "🔗 Integrations" }, { key: "plan", label: "📋 Plan & API" }].map(t => (
+                <button key={t.key} onClick={() => setSettingsTab(t.key)}
+                  style={{ flex: 1, padding: "8px", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "700", background: settingsTab === t.key ? C.bg2 : "transparent", color: settingsTab === t.key ? C.white : C.muted, transition: "all 0.2s" }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {settingsTab === "profile" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 {[
+                  { lbl: "Business Name", key: "businessName", ph: "Peach Agency" },
                   { lbl: "Business Email", key: "businessEmail", ph: "hello@agency.com" },
                   { lbl: "WhatsApp Number", key: "whatsappNumber", ph: "+961 XX XXX XXX" },
                   { lbl: "Business Phone", key: "businessPhone", ph: "+961 XX XXX XXX" },
                 ].map(f => (
-                  <div key={f.key} style={{ marginBottom: "10px" }}>
+                  <div key={f.key}>
                     <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.lbl}</label>
                     <input value={profile[f.key] || ""} onChange={e => setProfile(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
                       style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px" }} />
                   </div>
                 ))}
-                <button onClick={async () => { await updateDoc(doc(db, "users", user.uid), { profile }); setShowSettings(false); }}
-                  style={{ padding: "8px 16px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "7px", color: "#fff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                  {"Save Changes ✓"}
-                </button>
+                <div style={{ gridColumn: "1/-1" }}>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{"What You Offer"}</label>
+                  <textarea value={profile.whatYouDo || ""} onChange={e => setProfile(p => ({ ...p, whatYouDo: e.target.value }))} placeholder="Social media, web design, ads..."
+                    style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", minHeight: "60px", resize: "vertical", fontFamily: "Inter,sans-serif" }} />
+                </div>
+                <div style={{ gridColumn: "1/-1" }}>
+                  <button onClick={async () => { await updateDoc(doc(db, "users", user.uid), { profile }); setShowSettings(false); }}
+                    style={{ padding: "9px 20px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                    {"Save Changes ✓"}
+                  </button>
+                </div>
               </div>
-              {/* Higgsfield */}
+            )}
+
+            {settingsTab === "integrations" && (
               <div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"🎨 Higgsfield Creative"}</div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
-                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: higgsfield.connected ? "#34D399" : C.dim }} />
-                    <span style={{ fontSize: "12px", color: higgsfield.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{higgsfield.connected ? "Connected ✓" : "Not connected"}</span>
+                <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "10px", padding: "12px 14px", marginBottom: "16px", fontSize: "12px", color: C.gold, lineHeight: "1.6" }}>
+                  {"💡 Connect your own API keys — you control your data and costs. PitchMind never stores or uses your keys on our servers."}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                  {[
+                    { key: "google", label: "Google Places API", icon: "🗺️", desc: "Find real people who reviewed competitor businesses — proven purchase intent.", storageKey: "pm_google_key", state: googlePlaces, setState: setGooglePlaces, color: "#4285F4", ph: "AIza...", unlocks: ["Real reviewer leads", "Competitor insights", "Intent signals"], cost: "Free up to $200/mo (Google Cloud)", badge: "Growth Plan", soon: true },
+                    { key: "apollo", label: "Apollo.io", icon: "🚀", desc: "Enrich any lead with verified email, phone number and LinkedIn profile.", storageKey: "pm_apollo_key", state: apollo, setState: setApollo, color: "#7C3AED", ph: "apollo_key_...", unlocks: ["Verified emails", "Phone numbers", "LinkedIn profiles"], cost: "$49/mo on Apollo.io", badge: "Growth Plan", soon: true },
+                    { key: "phantom", label: "Phantombuster", icon: "👻", desc: "Extract public followers and group members from Instagram and Facebook.", storageKey: "pm_phantom_key", state: phantombuster, setState: setPhantombuster, color: "#EC4899", ph: "phantom_...", unlocks: ["Instagram followers", "FB group members", "Social leads"], cost: "$69/mo on Phantombuster", badge: "Pro Plan", soon: true },
+                    { key: "higgsfield", label: "Higgsfield AI", icon: "🎨", desc: "Generate ad images, carousels and video creatives from your campaigns.", storageKey: "pm_higgsfield_key", state: higgsfield, setState: setHighsfield, color: C.gold, ph: "hf_...", unlocks: ["AI ad images", "Video creatives", "Carousel ads"], cost: "Credits-based on Higgsfield.ai", badge: "Pro Plan", soon: false },
+                  ].map(intg => (
+                    <div key={intg.key} style={{ background: C.bg3, border: `1px solid ${intg.state.connected ? intg.color + "50" : C.border}`, borderRadius: "12px", padding: "16px", position: "relative" }}>
+                      {intg.soon && (
+                        <div style={{ position: "absolute", top: "10px", right: "10px", fontSize: "9px", fontWeight: "800", padding: "2px 8px", borderRadius: "20px", background: `${intg.color}15`, color: intg.color, border: `1px solid ${intg.color}30` }}>
+                          {intg.badge}
+                        </div>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <span style={{ fontSize: "20px" }}>{intg.icon}</span>
+                        <div>
+                          <div style={{ fontSize: "13px", fontWeight: "800" }}>{intg.label}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: intg.state.connected ? "#34D399" : C.dim }} />
+                            <span style={{ fontSize: "10px", color: intg.state.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{intg.state.connected ? "Connected" : "Not connected"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "11px", color: C.muted, lineHeight: "1.6", marginBottom: "10px" }}>{intg.desc}</div>
+                      <div style={{ marginBottom: "8px" }}>
+                        {intg.unlocks.map((u, i) => (
+                          <div key={i} style={{ fontSize: "11px", color: C.dim, marginBottom: "2px" }}>{"✓ "}{u}</div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: "10px", color: C.dim, marginBottom: "8px" }}>{"💰 "}{intg.cost}</div>
+                      <input type="password" placeholder={intg.ph} value={intg.state.apiKey}
+                        onChange={e => intg.setState(p => ({ ...p, apiKey: e.target.value }))}
+                        style={{ width: "100%", padding: "8px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "7px" }} />
+                      <button onClick={() => { if (intg.state.apiKey) { localStorage.setItem(intg.storageKey, intg.state.apiKey); intg.setState(p => ({ ...p, connected: true })); }}}
+                        style={{ width: "100%", padding: "8px", background: `${intg.color}18`, border: `1px solid ${intg.color}35`, borderRadius: "7px", color: intg.color, fontSize: "11px", fontWeight: "700", cursor: "pointer" }}>
+                        {intg.state.connected ? "Update Key ✓" : "Connect →"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {settingsTab === "plan" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"🔑 Claude API Key"}</div>
+                  <input type="password" placeholder="sk-ant-..." defaultValue={apiKey}
+                    onChange={e => { localStorage.setItem("pm_api_key", e.target.value); setApiKey(e.target.value); }}
+                    style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "6px" }} />
+                  <div style={{ fontSize: "11px", color: "#34D399", marginBottom: "4px" }}>{"✅ Stored locally · Never sent to servers"}</div>
+                  <div style={{ fontSize: "11px", color: C.dim }}>{"Get free key at console.anthropic.com"}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>{"📋 Your Plan"}</div>
+                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px", marginBottom: "12px" }}>
+                    <div style={{ fontSize: "22px", fontWeight: "900", color: plan.color, marginBottom: "2px" }}>{plan.name}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "12px" }}>{"$"}{plan.price}{"/month"}</div>
+                    <div style={{ display: "flex", gap: "20px", marginBottom: "14px" }}>
+                      <div>
+                        <div style={{ fontSize: "28px", fontWeight: "900", color: plan.color }}>{userData.credits}</div>
+                        <div style={{ fontSize: "10px", color: C.dim }}>{"credits left"}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "28px", fontWeight: "900", color: plan.color }}>{Math.floor(userData.credits / CREDITS_PER_SESSION)}</div>
+                        <div style={{ fontSize: "10px", color: C.dim }}>{"sessions left"}</div>
+                      </div>
+                    </div>
+                    <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
+                      style={{ width: "100%", padding: "9px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+                      {"Upgrade Plan →"}
+                    </button>
                   </div>
-                  <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "10px" }}>{"Generate ad images, carousels & reels directly from campaigns."}</div>
-                  <input type="password" placeholder="Higgsfield API Key" value={higgsfield.apiKey}
-                    onChange={e => setHighsfield(p => ({ ...p, apiKey: e.target.value }))}
-                    style={{ width: "100%", padding: "9px 11px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "8px" }} />
-                  <button onClick={() => { if (higgsfield.apiKey) { localStorage.setItem("pm_higgsfield_key", higgsfield.apiKey); setHighsfield(p => ({ ...p, connected: true })); }}}
-                    style={{ width: "100%", padding: "8px", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "7px", color: C.gold, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                    {higgsfield.connected ? "Update Key" : "Connect Higgsfield"}
-                  </button>
-                </div>
-                <div style={{ fontSize: "11px", color: C.dim }}>🔜 One-click creative generation coming next update</div>
-              </div>
-              {/* API + Plan */}
-              <div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>🔑 Claude API Key</div>
-                <input type="password" placeholder="sk-ant-..." defaultValue={apiKey}
-                  onChange={e => { localStorage.setItem("pm_api_key", e.target.value); setApiKey(e.target.value); }}
-                  style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "6px" }} />
-                <div style={{ fontSize: "11px", color: "#34D399", marginBottom: "16px" }}>{"✅ Stored locally · Never sent to servers"}</div>
-                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>{"📋 Your Plan"}</div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px" }}>
-                  <div style={{ fontSize: "16px", fontWeight: "800", color: PLANS[userData.plan]?.color || C.b2bLight, marginBottom: "4px" }}>{PLANS[userData.plan]?.name || "Starter"} — ${PLANS[userData.plan]?.price || 99}/mo</div>
-                  <div style={{ fontSize: "12px", color: C.muted, marginBottom: "10px" }}>{userData.credits} credits · {Math.floor(userData.credits / CREDITS_PER_SESSION)} sessions left</div>
-                  <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
-                    style={{ padding: "7px 14px", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "7px", color: C.gold, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                    {"Upgrade Plan →"}
-                  </button>
+                  <div style={{ background: C.bg3, border: "1px solid rgba(16,185,129,0.2)", borderRadius: "10px", padding: "12px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "700", color: "#34D399", marginBottom: "8px" }}>{"🔗 Connected Integrations"}</div>
+                    {[
+                      { label: "Google Places", connected: googlePlaces.connected },
+                      { label: "Apollo.io", connected: apollo.connected },
+                      { label: "Phantombuster", connected: phantombuster.connected },
+                      { label: "Higgsfield", connected: higgsfield.connected },
+                    ].map((intg, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: C.muted, marginBottom: "4px" }}>
+                        <span>{intg.label}</span>
+                        <span style={{ color: intg.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{intg.connected ? "✓ Connected" : "Not connected"}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
+
 
         {/* TABS */}
         <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "4px" }}>
@@ -985,36 +1073,121 @@ Return ONLY raw JSON:
               </div>
             )}
 
-            {/* B2C UPLOAD */}
+            {/* B2C SECTION */}
             {safeMode === "b2c" && (
-              <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "26px", marginBottom: "24px" }}>
-                <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📤 UPLOAD YOUR AD DATA"}</div>
-                <div style={{ fontSize: "13px", color: C.muted, marginBottom: "20px" }}>{"AI auto-detects format — works with Meta, TikTok, Google Ads, or any CSV"}</div>
-                <div onClick={() => fileRef.current?.click()}
-                  style={{ border: `2px dashed ${csvName ? accentBorder : C.border}`, borderRadius: "14px", padding: "36px", textAlign: "center", cursor: "pointer", background: csvName ? accentGlow : "transparent", transition: "all 0.2s", marginBottom: "16px" }}>
-                  <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
-                  <div style={{ fontSize: "28px", marginBottom: "10px" }}>{csvName ? "✅" : "📂"}</div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", marginBottom: "4px", color: csvName ? accentColor : C.white }}>
-                    {csvName || "Click to upload CSV file"}
-                  </div>
-                  <div style={{ fontSize: "12px", color: C.dim }}>
-                    {csvData.length > 0 ? <span style={{ color: "#34D399" }}>✅ {csvData.length} rows loaded — AI will auto-detect format</span> : "Meta Ads · TikTok Ads · Google Ads · Any CSV"}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-                  {["Meta Ads", "TikTok Ads", "Google Ads", "Other"].map(p => (
-                    <button key={p} onClick={() => setProfile(pr => ({ ...pr, b2cPlatform: p }))}
-                      style={{ padding: "6px 14px", borderRadius: "8px", border: `1px solid ${profile.b2cPlatform === p ? accentBorder : C.border}`, background: profile.b2cPlatform === p ? accentGlow : "transparent", color: profile.b2cPlatform === p ? accentColor : C.dim, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
-                      {p}
-                    </button>
+              <div style={{ marginBottom: "20px" }}>
+                {/* Mode selector */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px", marginBottom: "16px" }}>
+                  {[
+                    { key: "csv", icon: "📤", label: "Upload Ad Data", desc: "Meta / TikTok / Google CSV", color: C.b2cLight, locked: false },
+                    { key: "reviews", icon: "⭐", label: "Google Reviews", desc: "Real people · Proven intent", color: "#4285F4", locked: !googlePlaces.connected },
+                    { key: "apollo", icon: "🚀", label: "Apollo Enrichment", desc: "Emails · LinkedIn · Phones", color: "#7C3AED", locked: !apollo.connected },
+                    { key: "social", icon: "👻", label: "Social Finder", desc: "Instagram · Facebook leads", color: "#EC4899", locked: !phantombuster.connected },
+                  ].map(m => (
+                    <div key={m.key} onClick={() => !m.locked && setB2cMode(m.key)}
+                      style={{ background: b2cMode === m.key ? `${m.color}12` : C.bg2, border: `2px solid ${b2cMode === m.key ? m.color : m.locked ? "rgba(255,255,255,0.04)" : C.border}`, borderRadius: "12px", padding: "14px 12px", cursor: m.locked ? "default" : "pointer", opacity: m.locked ? 0.55 : 1, transition: "all 0.2s", position: "relative", textAlign: "center" }}>
+                      {m.locked && (
+                        <div style={{ position: "absolute", top: "8px", right: "8px", fontSize: "9px", fontWeight: "800", padding: "2px 6px", background: "rgba(255,255,255,0.06)", borderRadius: "20px", color: C.dim }}>{"🔒 Soon"}</div>
+                      )}
+                      <div style={{ fontSize: "22px", marginBottom: "6px" }}>{m.icon}</div>
+                      <div style={{ fontSize: "12px", fontWeight: "800", color: b2cMode === m.key ? m.color : C.white, marginBottom: "3px" }}>{m.label}</div>
+                      <div style={{ fontSize: "10px", color: C.dim, lineHeight: "1.4" }}>{m.desc}</div>
+                      {!m.locked && b2cMode !== m.key && <div style={{ marginTop: "8px", fontSize: "10px", color: m.color, fontWeight: "700" }}>{"Activate"}</div>}
+                      {b2cMode === m.key && <div style={{ marginTop: "8px", fontSize: "10px", color: m.color, fontWeight: "700" }}>{"✓ Active"}</div>}
+                      {m.locked && (
+                        <button onClick={e => { e.stopPropagation(); setShowSettings(true); setSettingsTab("integrations"); }}
+                          style={{ marginTop: "8px", padding: "4px 10px", background: "rgba(255,255,255,0.06)", border: "none", borderRadius: "6px", color: C.dim, fontSize: "10px", cursor: "pointer", fontWeight: "600" }}>
+                          {"Connect →"}
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
-                <button onClick={processCSV} disabled={csvProcessing || !csvData.length || userData.credits < CREDITS_PER_SESSION}
-                  style={{ width: "100%", padding: "13px", background: !csvData.length || csvProcessing ? C.bg3 : `linear-gradient(135deg, ${C.b2c}, ${C.b2cLight})`, border: "none", borderRadius: "10px", color: !csvData.length || csvProcessing ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: !csvData.length || csvProcessing ? "not-allowed" : "pointer", boxShadow: csvData.length ? `0 4px 20px ${C.b2cGlow}` : "none" }}>
-                  {csvProcessing ? `Analyzing ${csvData.length} rows...` : csvData.length > 0 ? `Analyze ${csvData.length} Rows with AI →` : "Upload a CSV file to continue"}
-                </button>
-                {csvProgress && <div style={{ marginTop: "12px", fontSize: "12px", color: accentColor }}>{csvProgress}</div>}
-                {csvErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "10px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{csvErr}</div>}
+
+                {/* CSV Upload Mode */}
+                {b2cMode === "csv" && (
+                  <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: C.b2cLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📤 UPLOAD AD DATA"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"AI auto-detects format — works with Meta, TikTok, Google Ads, or any CSV"}</div>
+                    <div onClick={() => fileRef.current?.click()}
+                      style={{ border: `2px dashed ${csvName ? C.b2cBorder : C.border}`, borderRadius: "12px", padding: "28px", textAlign: "center", cursor: "pointer", background: csvName ? C.b2cGlow : "transparent", transition: "all 0.2s", marginBottom: "14px" }}>
+                      <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
+                      <div style={{ fontSize: "28px", marginBottom: "8px" }}>{csvName ? "✅" : "📂"}</div>
+                      <div style={{ fontSize: "13px", fontWeight: "700", color: csvName ? C.b2cLight : C.white, marginBottom: "3px" }}>{csvName || "Click to upload CSV"}</div>
+                      <div style={{ fontSize: "12px", color: C.dim }}>{csvData.length > 0 ? `${csvData.length} rows loaded` : "Meta · TikTok · Google · Any CSV"}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: "7px", marginBottom: "14px", flexWrap: "wrap" }}>
+                      {["Meta Ads", "TikTok Ads", "Google Ads", "Other"].map(p => (
+                        <button key={p} onClick={() => setProfile(pr => ({ ...pr, b2cPlatform: p }))}
+                          style={{ padding: "6px 14px", borderRadius: "8px", border: `1px solid ${profile.b2cPlatform === p ? C.b2cBorder : C.border}`, background: profile.b2cPlatform === p ? C.b2cGlow : "transparent", color: profile.b2cPlatform === p ? C.b2cLight : C.dim, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={processCSV} disabled={csvProcessing || !csvData.length || userData.credits < CREDITS_PER_SESSION}
+                      style={{ width: "100%", padding: "12px", background: !csvData.length || csvProcessing ? C.bg3 : `linear-gradient(135deg, ${C.b2c}, ${C.b2cLight})`, border: "none", borderRadius: "9px", color: !csvData.length || csvProcessing ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: !csvData.length || csvProcessing ? "not-allowed" : "pointer" }}>
+                      {csvProcessing ? "Analyzing..." : csvData.length > 0 ? `Analyze ${csvData.length} Rows →` : "Upload CSV to continue"}
+                    </button>
+                    {csvProgress && <div style={{ marginTop: "10px", fontSize: "12px", color: C.b2cLight }}>{csvProgress}</div>}
+                    {csvErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "9px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{csvErr}</div>}
+                  </div>
+                )}
+
+                {/* Google Reviews Mode */}
+                {b2cMode === "reviews" && googlePlaces.connected && (
+                  <div style={{ background: C.bg2, border: "1px solid rgba(66,133,244,0.3)", borderRadius: "14px", padding: "22px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#4285F4", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"⭐ GOOGLE REVIEWS FINDER"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"Find real people who reviewed competitor businesses — proven purchase intent"}</div>
+                    <div style={{ display: "flex", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+                      <div style={{ flex: 1, minWidth: "180px" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{"Business Type"}</label>
+                        <input value={reviewQuery.business} onChange={e => setReviewQuery(p => ({ ...p, business: e.target.value }))} placeholder="gym, salon, restaurant..."
+                          style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: "180px" }}>
+                        <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{"Location"}</label>
+                        <input value={reviewQuery.location} onChange={e => setReviewQuery(p => ({ ...p, location: e.target.value }))} placeholder="Dubai, Beirut, Kuwait..."
+                          style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
+                      </div>
+                    </div>
+                    <div style={{ background: "rgba(66,133,244,0.08)", border: "1px solid rgba(66,133,244,0.2)", borderRadius: "9px", padding: "12px 14px", marginBottom: "14px", fontSize: "12px", color: "#93C5FD", lineHeight: "1.6" }}>
+                      {"🎯 Strategy: We find unhappy reviewers (1-3 stars) at your competitors — they're ready to switch to you."}
+                    </div>
+                    <button onClick={processCSV} disabled={!reviewQuery.business || !reviewQuery.location || userData.credits < CREDITS_PER_SESSION}
+                      style={{ width: "100%", padding: "12px", background: !reviewQuery.business || !reviewQuery.location ? C.bg3 : "linear-gradient(135deg, #1A73E8, #4285F4)", border: "none", borderRadius: "9px", color: !reviewQuery.business || !reviewQuery.location ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: !reviewQuery.business || !reviewQuery.location ? "not-allowed" : "pointer" }}>
+                      {"Find Reviewer Leads →"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Apollo Mode */}
+                {b2cMode === "apollo" && apollo.connected && (
+                  <div style={{ background: C.bg2, border: "1px solid rgba(124,58,237,0.3)", borderRadius: "14px", padding: "22px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#7C3AED", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"🚀 APOLLO.IO ENRICHMENT"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "14px" }}>{"Enrich your saved leads with verified emails, phone numbers and LinkedIn profiles"}</div>
+                    <div style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: "10px", padding: "16px", textAlign: "center" }}>
+                      <div style={{ fontSize: "32px", marginBottom: "8px" }}>{"🚀"}</div>
+                      <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "6px" }}>{"Apollo Enrichment"}</div>
+                      <div style={{ fontSize: "12px", color: C.muted, marginBottom: "14px" }}>{"Go to My Leads → click any lead → Enrich with Apollo to get their verified email and LinkedIn"}</div>
+                      <button onClick={() => setActiveTab("saved")} style={{ padding: "10px 24px", background: "rgba(124,58,237,0.2)", border: "1px solid rgba(124,58,237,0.4)", borderRadius: "9px", color: "#A78BFA", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                        {"Go to My Leads →"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Social Mode */}
+                {b2cMode === "social" && phantombuster.connected && (
+                  <div style={{ background: C.bg2, border: "1px solid rgba(236,72,153,0.3)", borderRadius: "14px", padding: "22px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#EC4899", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"👻 SOCIAL MEDIA FINDER"}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "14px" }}>{"Extract public followers and group members from Instagram and Facebook"}</div>
+                    <div style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.2)", borderRadius: "10px", padding: "16px", textAlign: "center" }}>
+                      <div style={{ fontSize: "32px", marginBottom: "8px" }}>{"👻"}</div>
+                      <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "6px" }}>{"Coming in Next Update"}</div>
+                      <div style={{ fontSize: "12px", color: C.muted }}>{"Phantombuster integration for Instagram followers and Facebook group members is being built now."}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
