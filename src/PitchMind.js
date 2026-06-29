@@ -10,13 +10,15 @@ const C = {
   b2c: "#7C3AED", b2cLight: "#8B5CF6", b2cGlow: "rgba(124,58,237,0.15)", b2cBorder: "rgba(124,58,237,0.3)",
   gold: "#F59E0B", goldLight: "#FCD34D", goldGlow: "rgba(245,158,11,0.15)",
   hot: "#EF4444", warm: "#F59E0B", cold: "#10B981",
+  comp: "#059669", compLight: "#10B981", compGlow: "rgba(5,150,105,0.15)", compBorder: "rgba(5,150,105,0.3)",
+  camp: "#D97706", campLight: "#F59E0B", campGlow: "rgba(217,119,6,0.15)", campBorder: "rgba(217,119,6,0.3)",
   white: "#F0F6FC", muted: "rgba(240,246,252,0.5)", dim: "rgba(240,246,252,0.25)",
 };
 
 const PLANS = {
-  starter: { name: "Starter", price: 99, credits: 50, sessions: 10, leads: 60, color: C.b2bLight, desc: "Perfect for freelancers & small teams", features: ["10 full lead sessions/month", "60 leads with AI reports", "B2B + B2C intelligence", "CRM pipeline & notes", "Export to CSV", "Email support"] },
-  growth: { name: "Growth", price: 249, credits: 150, sessions: 30, leads: 180, color: C.b2cLight, desc: "For growing agencies", features: ["30 full lead sessions/month", "180 leads with AI reports", "Everything in Starter", "Lead deduplication", "Website scoring (0-100)", "Priority support"] },
-  whitelabel: { name: "White Label", price: 499, credits: 400, sessions: 80, leads: 480, color: C.gold, desc: "Resell as your own product", features: ["80 full lead sessions/month", "480 leads with AI reports", "Everything in Growth", "Your logo & brand name", "Custom color scheme", "Client sub-accounts", "Dedicated support"] },
+  starter: { name: "Starter", price: 99, credits: 50, sessions: 10, leads: 60, color: C.b2bLight, desc: "Perfect for freelancers & solopreneurs", features: ["10 sessions/month", "60 leads + AI reports", "B2B + B2C intelligence", "Competitor Radar", "Campaign Builder", "One-click WhatsApp & Email", "CRM pipeline", "CSV export"] },
+  growth: { name: "Growth", price: 199, credits: 125, sessions: 25, leads: 150, color: C.b2cLight, desc: "For growing small businesses", features: ["25 sessions/month", "150 leads + AI reports", "Everything in Starter", "Website scoring (0-100)", "Higgsfield creative (coming soon)", "Priority support"] },
+  pro: { name: "Pro", price: 349, credits: 300, sessions: 60, leads: 360, color: C.gold, desc: "For agencies & power users", features: ["60 sessions/month", "360 leads + AI reports", "Everything in Growth", "Competitor deep analysis", "Full campaign packages", "Dedicated support"] },
 };
 
 const CREDITS_PER_SESSION = 5;
@@ -141,7 +143,7 @@ function PitchMindApp() {
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
   const [authErr, setAuthErr] = useState(""); const [authBusy, setAuthBusy] = useState(false);
   const [selPlan, setSelPlan] = useState("starter");
-  const [profile, setProfile] = useState({ businessName: "", whatYouDo: "", targetIndustry: "", location: "", b2cTarget: "", b2cPlatform: "Meta Ads" });
+  const [profile, setProfile] = useState({ businessName: "", whatYouDo: "", targetIndustry: "", location: "", b2cTarget: "", b2cPlatform: "Meta Ads", businessEmail: "", whatsappNumber: "", businessPhone: "" });
   const [profileErr, setProfileErr] = useState("");
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("pm_api_key") || "");
   const [apiInput, setApiInput] = useState(""); const [apiErr, setApiErr] = useState("");
@@ -152,6 +154,15 @@ function PitchMindApp() {
   const [csvData, setCsvData] = useState([]); const [csvName, setCsvName] = useState("");
   const [csvProcessing, setCsvProcessing] = useState(false); const [csvProgress, setCsvProgress] = useState(""); const [csvErr, setCsvErr] = useState("");
   const [savedFilter, setSavedFilter] = useState("all");
+  const [competitors, setCompetitors] = useState([]);
+  const [compScanning, setCompScanning] = useState(false);
+  const [compErr, setCompErr] = useState("");
+  const [compQuery, setCompQuery] = useState({ industry: "", location: "" });
+  const [selectedComp, setSelectedComp] = useState(null);
+  const [campaign, setCampaign] = useState(null);
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [higgsfield, setHighsfield] = useState({ apiKey: "", connected: false });
+  const [showSettings, setShowSettings] = useState(false);
   const [brandSettings, setBrandSettings] = useState({ name: "PitchMind", color: C.b2bLight, logoUrl: "", tagline: "Find the lead. Win the deal." });
   const [showBrand, setShowBrand] = useState(false);
   const [websiteScores, setWebsiteScores] = useState({});
@@ -161,6 +172,11 @@ function PitchMindApp() {
   useEffect(() => {
     const saved = localStorage.getItem("pm_brand");
     if (saved) { try { setBrandSettings(JSON.parse(saved)); } catch (_) {} }
+  }, []);
+
+  useEffect(() => {
+    const hk = localStorage.getItem("pm_higgsfield_key");
+    if (hk) setHighsfield({ apiKey: hk, connected: true });
   }, []);
 
   useEffect(() => {
@@ -284,6 +300,56 @@ function PitchMindApp() {
     setBrandSettings(settings);
     localStorage.setItem("pm_brand", JSON.stringify(settings));
     if (user) await updateDoc(doc(db, "users", user.uid), { brandSettings: settings });
+  };
+
+  // ── COMPETITOR SCAN ──
+  const scanCompetitors = async () => {
+    if (!compQuery.industry || !compQuery.location) { setCompErr("Enter industry and location."); return; }
+    if (userData.credits < CREDITS_PER_SESSION) { setCompErr("Not enough credits."); return; }
+    setCompErr(""); setCompScanning(true); setCompetitors([]);
+    if (!await useCredits()) { setCompErr("Not enough credits."); setCompScanning(false); return; }
+    try {
+      const prompt = `You are PitchMind Competitor Intelligence. Find top 6 competitors.
+MY BUSINESS: ${profile.businessName} | OFFERS: ${profile.whatYouDo}
+ANALYZING: Top ${compQuery.industry} in ${compQuery.location}
+Return ONLY valid JSON array. No markdown:
+[{"name":"Competitor Name","type":"${compQuery.industry}","location":"${compQuery.location}","website":"their website or N/A","strength":85,"marketPosition":"Market leader","strongPoints":["Strong point 1","Strong point 2"],"weakPoints":["Weakness 1","Weakness 2"],"ourAdvantage":"How ${profile.businessName} can beat them","threatLevel":"High/Medium/Low","opportunityGap":"Specific gap to exploit"}]`;
+      const raw = await callClaude(apiKey, prompt, 2000);
+      const parsed = safeJSON(raw);
+      if (!Array.isArray(parsed)) throw new Error("Invalid response");
+      setCompetitors(parsed);
+    } catch (e) { setCompErr(`Error: ${e.message}`); }
+    setCompScanning(false);
+  };
+
+  const loadCompReport = async (comp) => {
+    if (comp.report) { setSelectedComp(comp); return; }
+    setSelectedComp({ ...comp, loading: true });
+    try {
+      const prompt = `Deep competitor analysis. MY BUSINESS: ${profile.businessName} — ${profile.whatYouDo}
+COMPETITOR: ${comp.name} | ${comp.location} | Strength: ${comp.strength}/100
+Return ONLY raw JSON:
+{"deepAnalysis":"5-sentence deep analysis.","theirStrategy":"Their likely marketing strategy.","theirVulnerabilities":"Top 3 specific weaknesses.","howToBeatThem":"Exact strategy to win against them.","positioningMessage":"How to position ${profile.businessName} vs them.","actionPlan":"5 specific actions to gain market share.","keyLearning":"Single most important thing to learn from them."}`;
+      const raw = await callClaude(apiKey, prompt, 1500);
+      const parsed = safeJSON(raw);
+      setSelectedComp(p => ({ ...p, loading: false, report: parsed }));
+    } catch (e) { setSelectedComp(p => ({ ...p, loading: false, reportErr: e.message })); }
+  };
+
+  // ── CAMPAIGN BUILDER ──
+  const buildCampaign = async (lead) => {
+    setCampaignLoading(true); setCampaign(null);
+    try {
+      const prompt = `You are PitchMind Campaign Builder. Full ad campaign.
+MY BUSINESS: ${profile.businessName} — ${profile.whatYouDo}
+TARGET: ${lead.name} | ${lead.type || lead.platform || "business"} | Pain: ${lead.painPoint || "needs our services"}
+Return ONLY raw JSON:
+{"campaignName":"Catchy campaign name","objective":"Leads","platforms":[{"platform":"Meta Ads","format":"Reel","budget":"$20-50/day","duration":"14 days","audience":{"location":"${profile.location || "City"}","age":"25-45","interests":["interest1","interest2","interest3"]}}],"hook":"Attention-grabbing 3-second hook","caption":"Full caption with emojis 150 words max","hashtags":["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8"],"callToAction":"Book Now","creativeDirection":"Detailed visual/video description for creative generation","a_b_test":"Version A vs Version B to test","expectedResults":"Realistic expected results","totalBudget":"$560-1400 for 14 days","timeline":"2 weeks"}`;
+      const raw = await callClaude(apiKey, prompt, 1800);
+      const parsed = safeJSON(raw);
+      setCampaign({ ...parsed, leadName: lead.name });
+    } catch (e) { console.log("Campaign error:", e); }
+    setCampaignLoading(false);
   };
 
   // Website Scorer
@@ -435,18 +501,22 @@ Return ONLY a valid JSON array. Start with [ end with ]. No markdown. Use EXACT 
       const isB2C = lead.leadType === "b2c";
       const wsScore = websiteScores[lead.name];
       const wsContext = wsScore ? `Website Score: ${wsScore.score}/100. Issues: ${(wsScore.issues || []).join(", ")}` : "";
+      const userWA = profile.whatsappNumber || profile.businessPhone || "";
+      const userEmail = profile.businessEmail || "";
       const prompt = isB2C
         ? `You are PitchMind AI. Deep B2C sales intelligence.
 MY BUSINESS: ${profile.businessName} — ${profile.whatYouDo}
+MY CONTACT: WhatsApp ${userWA} | Email ${userEmail}
 CONTACT: ${lead.name} | Platform: ${lead.platform} | Engagement: ${lead.engagement} | Key Metric: ${lead.keyMetric || "N/A"}
 Return ONLY raw JSON:
-{"profileAnalysis":"Who this person/campaign audience is.","psychologicalProfile":"Mindset, motivations, fears.","buyingSignals":"Specific signals showing purchase intent.","likelyObjections":"Top 3 objections and how to handle each.","pitchStrategy":"Exact step-by-step approach.","openingMessage":"Perfect first message.","followUpSequence":"Day 1, 3, 7, 14, 30 messages as a single string.","closingScript":"Exact closing words.","bestTime":"Best day and time to reach out.","conversionTip":"Single most powerful conversion line.","creativeInsight":"What about this campaign creative/angle worked and how to replicate it."}`
+{"profileAnalysis":"Who this person/audience is.","psychologicalProfile":"Mindset, motivations, fears.","buyingSignals":"Signals showing purchase intent.","likelyObjections":"Top 3 objections + how to handle.","pitchStrategy":"Step-by-step approach.","openingMessage":"Perfect first message.","whatsappMessage":"Ready-to-send WhatsApp message under 60 words.","emailSubject":"Email subject line.","emailBody":"Full email 150 words max.","followUpSequence":"5 follow-ups as single string Day 1/3/7/14/30.","closingScript":"Exact closing words.","bestTime":"Best time to reach out.","conversionTip":"#1 conversion line.","creativeInsight":"What worked in this campaign and how to replicate."}`
         : `You are PitchMind AI. Deep B2B sales intelligence.
 MY BUSINESS: ${profile.businessName} — ${profile.whatYouDo}
+MY CONTACT: WhatsApp ${userWA} | Email ${userEmail}
 TARGET: ${lead.name} | ${lead.type} | ${lead.address} | ${lead.phone} | ${lead.website} | ${lead.rating}/5 | Weaknesses: ${(lead.weaknesses || []).join(", ")}
 ${wsContext}
 Return ONLY raw JSON:
-{"companyOverview":"3 sentences about this business.","weaknessAnalysis":"Why weak and what it costs them.","websiteAnalysis":"${wsScore ? `Website scored ${wsScore.score}/100. ` : ""}Specific website improvements needed.","decisionMaker":"Who buys: title, personality, priorities.","emotionalProfile":"Fears, frustrations, desires.","objections":"Top 3 objections and real reasons.","pitchStrategy":"Step by step approach.","openingLine":"Perfect first sentence.","closingAngle":"Most powerful closing argument.","emailTemplate":"4-sentence cold email.","whatsappMessage":"Short WhatsApp opener under 50 words."}`;
+{"companyOverview":"3 sentences.","weaknessAnalysis":"Why weak + what it costs them.","websiteAnalysis":"Website quality + improvements.","decisionMaker":"Who buys: title, personality.","emotionalProfile":"Fears, frustrations, desires.","objections":"Top 3 objections + how to handle.","pitchStrategy":"Step by step.","openingLine":"Perfect first sentence.","whatsappMessage":"Ready-to-send WhatsApp under 60 words.","emailSubject":"Cold email subject.","emailBody":"Full cold email 150 words max.","closingAngle":"Most powerful closing.","bestTime":"Best time to reach out.","campaignIdea":"One specific ad campaign idea to pitch them."}`;
 
       const raw = await callClaude(apiKey, prompt, 2500);
       const parsed = safeJSON(raw);
@@ -461,7 +531,6 @@ Return ONLY raw JSON:
   const doLogout = async () => { await signOut(auth); setLeads([]); setSavedLeads([]); setScreen("login"); };
 
   const brand = brandSettings;
-  const isWhiteLabel = userData?.plan === "whitelabel";
   const appName = isWhiteLabel && brand.name !== "PitchMind" ? brand.name : "PITCHMIND";
   const primaryColor = isWhiteLabel && brand.color ? brand.color : C.b2bLight;
 
@@ -671,6 +740,23 @@ Return ONLY raw JSON:
             }
           </div>
         ))}
+        {/* Outreach */}
+        <div style={{ background: C.bg3, border: `1px solid rgba(245,158,11,0.2)`, borderRadius: "12px", padding: "14px", marginBottom: "14px" }}>
+          <div style={{ fontSize: "10px", fontWeight: "700", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>💬 OUTREACH — enables one-click WhatsApp & Email</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.muted, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Business Email</label>
+              <input value={profile.businessEmail || ""} onChange={e => setProfile(p => ({ ...p, businessEmail: e.target.value }))} placeholder="hello@agency.com"
+                style={{ width: "100%", padding: "9px 11px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.muted, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>WhatsApp Number</label>
+              <input value={profile.whatsappNumber || ""} onChange={e => setProfile(p => ({ ...p, whatsappNumber: e.target.value }))} placeholder="+961 XX XXX XXX"
+                style={{ width: "100%", padding: "9px 11px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px" }} />
+            </div>
+          </div>
+        </div>
+
         {mode === "b2c" && (
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.muted, marginBottom: "7px", letterSpacing: "1px", textTransform: "uppercase" }}>Ad Platform</label>
@@ -736,13 +822,10 @@ Return ONLY raw JSON:
             style={{ padding: "5px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
             Switch to {safeMode === "b2b" ? "B2C" : "B2B"}
           </button>
-          {userData.plan === "whitelabel" && (
-            <button onClick={() => setShowBrand(!showBrand)}
-              style={{ padding: "5px 10px", background: showBrand ? C.goldGlow : C.bg2, border: `1px solid ${showBrand ? C.gold : C.border}`, borderRadius: "8px", color: showBrand ? C.gold : C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
-              🏷️ My Brand
-            </button>
-          )}
-          <button onClick={() => setScreen("profile")} style={{ padding: "5px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px" }}>Settings</button>
+          <button onClick={() => setShowSettings(s => !s)}
+            style={{ padding: "5px 10px", background: showSettings ? "rgba(255,255,255,0.06)" : C.bg2, border: `1px solid ${showSettings ? "rgba(255,255,255,0.12)" : C.border}`, borderRadius: "8px", color: showSettings ? C.white : C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
+            ⚙️ Settings
+          </button>
           <button onClick={doLogout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.dim, cursor: "pointer", fontSize: "11px" }}>Logout</button>
         </div>
       </div>
@@ -750,44 +833,6 @@ Return ONLY raw JSON:
       <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "28px 28px" }}>
 
         {/* WHITE LABEL SETTINGS PANEL */}
-        {showBrand && userData.plan === "whitelabel" && (
-          <div style={{ background: C.bg2, border: `1px solid ${C.gold}40`, borderRadius: "16px", padding: "24px", marginBottom: "24px", animation: "fadeUp 0.3s ease" }}>
-            <div style={{ fontSize: "13px", fontWeight: "800", color: C.gold, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "20px" }}>🏷️ WHITE LABEL BRAND SETTINGS</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "16px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.muted, marginBottom: "7px", letterSpacing: "1px", textTransform: "uppercase" }}>Brand Name</label>
-                <input value={brand.name} onChange={e => setBrandSettings(p => ({ ...p, name: e.target.value }))} placeholder="Your Agency Name"
-                  style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.muted, marginBottom: "7px", letterSpacing: "1px", textTransform: "uppercase" }}>Primary Color</label>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <input type="color" value={brand.color} onChange={e => setBrandSettings(p => ({ ...p, color: e.target.value }))}
-                    style={{ width: "40px", height: "38px", padding: "2px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "6px", cursor: "pointer" }} />
-                  <input value={brand.color} onChange={e => setBrandSettings(p => ({ ...p, color: e.target.value }))} placeholder="#3B82F6"
-                    style={{ flex: 1, padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.muted, marginBottom: "7px", letterSpacing: "1px", textTransform: "uppercase" }}>Tagline</label>
-                <input value={brand.tagline} onChange={e => setBrandSettings(p => ({ ...p, tagline: e.target.value }))} placeholder="Find the lead. Win the deal."
-                  style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-              </div>
-            </div>
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.muted, marginBottom: "7px", letterSpacing: "1px", textTransform: "uppercase" }}>Logo URL (optional)</label>
-              <input value={brand.logoUrl} onChange={e => setBrandSettings(p => ({ ...p, logoUrl: e.target.value }))} placeholder="https://yourdomain.com/logo.png"
-                style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-            </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <button onClick={() => saveBrandSettings(brand)}
-                style={{ padding: "10px 24px", background: `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`, border: "none", borderRadius: "8px", color: "#000", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                Save Brand Settings ✓
-              </button>
-              <div style={{ fontSize: "12px", color: C.dim }}>Preview: <span style={{ color: brand.color, fontWeight: "700" }}>{brand.name}</span> — {brand.tagline}</div>
-            </div>
-          </div>
-        )}
 
         {/* LOW CREDITS WARNING */}
         {userData.credits < CREDITS_PER_SESSION && userData.credits > 0 && (
@@ -821,15 +866,84 @@ Return ONLY raw JSON:
           ))}
         </div>
 
+        {/* SETTINGS PANEL */}
+        {showSettings && (
+          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px", marginBottom: "20px", animation: "fadeUp 0.2s ease" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+              <div style={{ fontSize: "12px", fontWeight: "800", color: C.white, letterSpacing: "2px", textTransform: "uppercase" }}>⚙️ SETTINGS</div>
+              <button onClick={() => setShowSettings(false)} style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: "18px", lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "18px" }}>
+              {/* Profile outreach */}
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>📞 Outreach Info</div>
+                {[
+                  { lbl: "Business Email", key: "businessEmail", ph: "hello@agency.com" },
+                  { lbl: "WhatsApp Number", key: "whatsappNumber", ph: "+961 XX XXX XXX" },
+                  { lbl: "Business Phone", key: "businessPhone", ph: "+961 XX XXX XXX" },
+                ].map(f => (
+                  <div key={f.key} style={{ marginBottom: "10px" }}>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.lbl}</label>
+                    <input value={profile[f.key] || ""} onChange={e => setProfile(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
+                      style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px" }} />
+                  </div>
+                ))}
+                <button onClick={async () => { await updateDoc(doc(db, "users", user.uid), { profile }); setShowSettings(false); }}
+                  style={{ padding: "8px 16px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "7px", color: "#fff", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+                  Save Changes ✓
+                </button>
+              </div>
+              {/* Higgsfield */}
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>🎨 Higgsfield Creative</div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px", marginBottom: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: higgsfield.connected ? "#34D399" : C.dim }} />
+                    <span style={{ fontSize: "12px", color: higgsfield.connected ? "#34D399" : C.dim, fontWeight: "600" }}>{higgsfield.connected ? "Connected ✓" : "Not connected"}</span>
+                  </div>
+                  <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "10px" }}>Generate ad images, carousels & reels directly from campaigns.</div>
+                  <input type="password" placeholder="Higgsfield API Key" value={higgsfield.apiKey}
+                    onChange={e => setHighsfield(p => ({ ...p, apiKey: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 11px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "8px" }} />
+                  <button onClick={() => { if (higgsfield.apiKey) { localStorage.setItem("pm_higgsfield_key", higgsfield.apiKey); setHighsfield(p => ({ ...p, connected: true })); }}}
+                    style={{ width: "100%", padding: "8px", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "7px", color: C.gold, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+                    {higgsfield.connected ? "Update Key" : "Connect Higgsfield"}
+                  </button>
+                </div>
+                <div style={{ fontSize: "11px", color: C.dim }}>🔜 One-click creative generation coming next update</div>
+              </div>
+              {/* API + Plan */}
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px" }}>🔑 Claude API Key</div>
+                <input type="password" placeholder="sk-ant-..." defaultValue={apiKey}
+                  onChange={e => { localStorage.setItem("pm_api_key", e.target.value); setApiKey(e.target.value); }}
+                  style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", marginBottom: "6px" }} />
+                <div style={{ fontSize: "11px", color: "#34D399", marginBottom: "16px" }}>✅ Stored locally · Never sent to servers</div>
+                <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "8px" }}>📋 Your Plan</div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px" }}>
+                  <div style={{ fontSize: "16px", fontWeight: "800", color: PLANS[userData.plan]?.color || C.b2bLight, marginBottom: "4px" }}>{PLANS[userData.plan]?.name || "Starter"} — ${PLANS[userData.plan]?.price || 99}/mo</div>
+                  <div style={{ fontSize: "12px", color: C.muted, marginBottom: "10px" }}>{userData.credits} credits · {Math.floor(userData.credits / CREDITS_PER_SESSION)} sessions left</div>
+                  <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
+                    style={{ padding: "7px 14px", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "7px", color: C.gold, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+                    Upgrade Plan →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TABS */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "5px" }}>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "4px" }}>
           {[
-            { key: "scan", label: safeMode === "b2b" ? "🔍 Scan for Leads" : "📤 Upload Ad Data" },
-            { key: "saved", label: `💾 My Leads${savedLeads.length > 0 ? ` (${savedLeads.length})` : ""}` },
+            { key: "scan", icon: safeMode === "b2b" ? "🔍" : "📤", label: safeMode === "b2b" ? "Scan Leads" : "Upload Data", bg: `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})` },
+            { key: "saved", icon: "💾", label: `My Leads${savedLeads.length > 0 ? ` (${savedLeads.length})` : ""}`, bg: `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})` },
+            { key: "competitors", icon: "🕵️", label: "Competitor Radar", bg: `linear-gradient(135deg, ${C.comp}, ${C.compLight})` },
+            { key: "campaigns", icon: "📣", label: "Campaign Builder", bg: `linear-gradient(135deg, ${C.camp}, ${C.campLight})` },
           ].map(t => (
             <button key={t.key} onClick={() => { setActiveTab(t.key); if (t.key === "saved" && user) loadLeads(user.uid); }}
-              style={{ flex: 1, padding: "10px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "700", transition: "all 0.2s", background: activeTab === t.key ? `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})` : "transparent", color: activeTab === t.key ? "#fff" : C.muted, boxShadow: activeTab === t.key ? `0 2px 12px ${accentGlow}` : "none" }}>
-              {t.label}
+              style={{ flex: 1, padding: "9px 4px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "700", transition: "all 0.2s", background: activeTab === t.key ? t.bg : "transparent", color: activeTab === t.key ? "#fff" : C.muted }}>
+              {t.icon} {t.label}
             </button>
           ))}
         </div>
@@ -924,7 +1038,7 @@ Return ONLY raw JSON:
                     const sc = scoreColor(lead.score || 70);
                     const saved = savedLeads.find(s => s.name === lead.name);
                     const ws = websiteScores[lead.name];
-                    return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode={safeMode} accentColor={accentColor} accentGlow={accentGlow} websiteScore={ws} onReport={() => loadReport(saved || lead)} />;
+                    return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode={safeMode} accentColor={accentColor} accentGlow={accentGlow} websiteScore={ws} onReport={() => loadReport(saved || lead)} onCampaign={() => { setActiveTab("campaigns"); buildCampaign(lead); }} />;
                   })}
                 </div>
               </>
@@ -1001,11 +1115,160 @@ Return ONLY raw JSON:
                         onStatus={s => updateStatus(lead.id, s)}
                         onNotes={n => updateNotes(lead.id, n)}
                         onDelete={() => deleteLead(lead.id)}
-                        onScoreWebsite={() => scoreWebsite(lead)} />
+                        onScoreWebsite={() => scoreWebsite(lead)}
+                        onCampaign={() => { setActiveTab("campaigns"); buildCampaign(lead); }} />
                     );
                   })}
                 </div>
               </>
+            )}
+          </>
+        )}
+      </div>
+
+        {/* ── COMPETITOR TAB ── */}
+        {activeTab === "competitors" && (
+          <>
+            <div style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>🕵️ COMPETITOR RADAR</div>
+              <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>Analyze top competitors and find their weaknesses</div>
+              <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+                {[{ label: "Industry / Business Type", key: "industry", ph: "Web design agencies, Marketing firms..." }, { label: "Location", key: "location", ph: "Dubai, Beirut, Kuwait..." }].map(f => (
+                  <div key={f.key} style={{ flex: 1, minWidth: "180px" }}>
+                    <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", letterSpacing: "1px", textTransform: "uppercase" }}>{f.label}</label>
+                    <input value={compQuery[f.key]} onChange={e => setCompQuery(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
+                      style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
+                  </div>
+                ))}
+                <button onClick={scanCompetitors} disabled={compScanning || userData.credits < CREDITS_PER_SESSION}
+                  style={{ padding: "10px 22px", background: compScanning ? C.bg3 : `linear-gradient(135deg, ${C.comp}, ${C.compLight})`, border: "none", borderRadius: "8px", color: compScanning ? C.dim : "#fff", fontSize: "13px", fontWeight: "700", cursor: compScanning ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                  {compScanning ? "Analyzing..." : "Analyze Competitors →"}
+                </button>
+              </div>
+              {compScanning && <div style={{ marginTop: "10px" }}><LoadingDots color={C.compLight} /></div>}
+              {compErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "9px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{compErr}</div>}
+            </div>
+            {competitors.length > 0 ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: "12px" }}>
+                {competitors.map((comp, i) => {
+                  const tc = comp.threatLevel === "High" ? "#F87171" : comp.threatLevel === "Medium" ? "#FCD34D" : "#34D399";
+                  return (
+                    <div key={i} style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "13px", padding: "18px", display: "flex", flexDirection: "column" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: "800" }}>{comp.name}</div>
+                          <div style={{ fontSize: "10px", color: C.compLight, fontWeight: "700", textTransform: "uppercase" }}>{comp.marketPosition}</div>
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: "8px", color: C.dim, fontWeight: "700" }}>STRENGTH</div>
+                          <div style={{ fontSize: "20px", fontWeight: "900", color: C.compLight }}>{comp.strength}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "5px", background: `${tc}15`, color: tc, border: `1px solid ${tc}30`, display: "inline-block", marginBottom: "8px", width: "fit-content" }}>⚠ {comp.threatLevel} Threat</span>
+                      {comp.website && comp.website !== "N/A" && <a href={comp.website.startsWith("http") ? comp.website : `https://${comp.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: C.compLight, marginBottom: "8px", display: "block" }}>🌐 {comp.website} ↗</a>}
+                      <div style={{ marginBottom: "6px" }}>{(comp.strongPoints || []).slice(0, 2).map((s, j) => <div key={j} style={{ fontSize: "11px", color: "#34D399" }}>✓ {s}</div>)}</div>
+                      <div style={{ marginBottom: "8px" }}>{(comp.weakPoints || []).slice(0, 2).map((w, j) => <div key={j} style={{ fontSize: "11px", color: "#F87171" }}>✗ {w}</div>)}</div>
+                      <div style={{ fontSize: "11px", color: C.muted, flexGrow: 1, marginBottom: "10px" }}>🎯 {comp.ourAdvantage}</div>
+                      <button onClick={() => loadCompReport(comp)} style={{ width: "100%", padding: "9px", background: C.compGlow, border: `1px solid ${C.compBorder}`, borderRadius: "8px", color: C.compLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>Deep Analysis →</button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : !compScanning && (
+              <div style={{ textAlign: "center", padding: "60px" }}>
+                <div style={{ fontSize: "46px", marginBottom: "12px" }}>🕵️</div>
+                <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>KNOW YOUR COMPETITION</div>
+                <div style={{ fontSize: "13px", color: C.dim }}>Analyze top competitors · Find their weaknesses · Exploit their gaps</div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── CAMPAIGN TAB ── */}
+        {activeTab === "campaigns" && (
+          <>
+            <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
+              <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>📣 CAMPAIGN BUILDER</div>
+              <div style={{ fontSize: "13px", color: C.muted }}>
+                Go to <strong style={{ color: C.campLight }}>Scan Leads</strong> or <strong style={{ color: C.campLight }}>My Leads</strong>, click <strong style={{ color: C.campLight }}>📣</strong> on any lead card to build a full campaign.
+              </div>
+            </div>
+            {campaignLoading && <div style={{ textAlign: "center", padding: "50px" }}><LoadingDots color={C.campLight} /><div style={{ fontSize: "14px", fontWeight: "700", marginTop: "14px" }}>Building campaign...</div></div>}
+            {campaign && !campaignLoading && (
+              <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+                  <div>
+                    <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>FOR: {campaign.leadName}</div>
+                    <div style={{ fontSize: "20px", fontWeight: "800" }}>{campaign.campaignName}</div>
+                    <div style={{ fontSize: "13px", color: C.muted, marginTop: "3px" }}>{campaign.objective} · {campaign.timeline} · {campaign.totalBudget}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button onClick={() => { const t = `${campaign.campaignName}
+
+Caption:
+${campaign.caption}
+
+Hashtags: ${(campaign.hashtags||[]).join(" ")}
+
+CTA: ${campaign.callToAction}`; navigator.clipboard?.writeText(t); }}
+                      style={{ padding: "8px 14px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>📋 Copy</button>
+                    <button onClick={() => setCampaign(null)} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, fontSize: "12px", cursor: "pointer" }}>Clear</button>
+                  </div>
+                </div>
+                {(campaign.platforms || []).map((p, i) => (
+                  <div key={i} style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "800" }}>📱 {p.platform} — {p.format}</div>
+                      <div style={{ fontSize: "12px", color: C.campLight, fontWeight: "700" }}>{p.budget}/day · {p.duration}</div>
+                    </div>
+                    {p.audience && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <div><div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>Targeting</div>
+                          <div style={{ fontSize: "12px", color: C.muted }}>📍 {p.audience.location}</div>
+                          <div style={{ fontSize: "12px", color: C.muted }}>👤 {p.audience.age}</div></div>
+                        <div><div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>Interests</div>
+                          {(p.audience.interests || []).map((int, j) => <div key={j} style={{ fontSize: "12px", color: C.muted }}>• {int}</div>)}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>⚡ HOOK</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700" }}>{campaign.hook}</div>
+                  </div>
+                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>🎯 CTA</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700" }}>{campaign.callToAction}</div>
+                  </div>
+                </div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "7px" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase" }}>📝 CAPTION</div>
+                    <button onClick={() => navigator.clipboard?.writeText(campaign.caption || "")} style={{ fontSize: "10px", color: C.muted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: "5px", padding: "2px 8px", cursor: "pointer" }}>Copy</button>
+                  </div>
+                  <div style={{ fontSize: "13px", lineHeight: "1.75", color: "rgba(240,246,252,0.85)", whiteSpace: "pre-wrap" }}>{campaign.caption}</div>
+                </div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px", marginBottom: "12px" }}>
+                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px" }}>🏷️ HASHTAGS</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>{(campaign.hashtags || []).map((h, i) => <span key={i} style={{ padding: "3px 10px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "20px", fontSize: "12px", color: C.campLight }}>{h}</span>)}</div>
+                </div>
+                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
+                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>🎨 CREATIVE DIRECTION FOR HIGGSFIELD</div>
+                  <div style={{ fontSize: "13px", color: C.muted, lineHeight: "1.7", marginBottom: "10px" }}>{campaign.creativeDirection}</div>
+                  <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", fontSize: "12px", color: C.gold }}>
+                    ⚙️ Go to Settings → Connect Higgsfield → Generate creative automatically
+                  </div>
+                </div>
+              </div>
+            )}
+            {!campaign && !campaignLoading && (
+              <div style={{ textAlign: "center", padding: "60px" }}>
+                <div style={{ fontSize: "46px", marginBottom: "12px" }}>📣</div>
+                <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>BUILD A CAMPAIGN</div>
+                <div style={{ fontSize: "13px", color: C.dim, marginBottom: "24px" }}>Click 📣 on any lead card to generate a full ad campaign</div>
+                <button onClick={() => setActiveTab("scan")} style={{ padding: "10px 24px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>→ Find a Lead First</button>
+              </div>
             )}
           </>
         )}
@@ -1059,6 +1322,48 @@ Return ONLY raw JSON:
                 <textarea value={selectedLead.notes || ""} onChange={e => updateNotes(selectedLead.id, e.target.value)} placeholder="Add notes about this lead..."
                   style={{ width: "100%", padding: "10px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.white, fontSize: "12px", resize: "vertical", minHeight: "56px", fontFamily: "Inter,sans-serif", marginBottom: "14px" }} />
               )}
+
+              {/* ONE-CLICK OUTREACH */}
+              {selectedLead.report && (
+                <div style={{ background: C.bg3, border: "1px solid rgba(245,158,11,0.25)", borderRadius: "12px", padding: "14px", marginBottom: "14px" }}>
+                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>💬 ONE-CLICK OUTREACH</div>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+                    {selectedLead.report.whatsappMessage && (
+                      <button onClick={() => {
+                        const phone = (selectedLead.phone || "").replace(/\D/g, "");
+                        const msg = encodeURIComponent(selectedLead.report.whatsappMessage);
+                        window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, "_blank");
+                      }}
+                        style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.3)", borderRadius: "8px", color: "#25D366", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Send WhatsApp
+                      </button>
+                    )}
+                    {selectedLead.report.emailBody && (
+                      <button onClick={() => {
+                        const to = selectedLead.email || "";
+                        const sub = encodeURIComponent(selectedLead.report.emailSubject || "");
+                        const body = encodeURIComponent(safeStr(selectedLead.report.emailBody) || "");
+                        window.open(`mailto:${to}?subject=${sub}&body=${body}`, "_blank");
+                      }}
+                        style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "8px", color: "#60A5FA", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Send Email
+                      </button>
+                    )}
+                    <button onClick={() => { setSelectedLead(null); setActiveTab("campaigns"); buildCampaign(selectedLead); }}
+                      style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
+                      📣 Build Campaign
+                    </button>
+                  </div>
+                  {selectedLead.report.whatsappMessage && (
+                    <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "10px 12px" }}>
+                      <div style={{ fontSize: "9px", color: "#25D366", fontWeight: "700", letterSpacing: "0.5px", marginBottom: "4px" }}>WHATSAPP PREVIEW</div>
+                      <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6" }}>{selectedLead.report.whatsappMessage}</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {selectedLead.loading && (
@@ -1107,6 +1412,40 @@ Return ONLY raw JSON:
           </div>
         </div>
       )}
+
+      {/* COMPETITOR DEEP MODAL */}
+      {selectedComp && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", backdropFilter: "blur(10px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
+          onClick={e => e.target === e.currentTarget && setSelectedComp(null)}>
+          <div style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "20px", padding: "32px", maxWidth: "700px", width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+            <button onClick={() => setSelectedComp(null)}
+              style={{ position: "absolute", top: "14px", right: "14px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, width: "30px", height: "30px", cursor: "pointer", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>🕵️ COMPETITOR DEEP ANALYSIS</div>
+            <div style={{ fontSize: "19px", fontWeight: "800", marginBottom: "3px" }}>{selectedComp.name}</div>
+            <div style={{ fontSize: "12px", color: C.muted, marginBottom: "20px" }}>{selectedComp.marketPosition} · Strength {selectedComp.strength}/100</div>
+            {selectedComp.loading && <div style={{ textAlign: "center", padding: "36px" }}><LoadingDots color={C.compLight} /><div style={{ color: C.muted, marginTop: "10px", fontSize: "13px" }}>Analyzing...</div></div>}
+            {selectedComp.reportErr && <div style={{ color: "#F87171", padding: "14px", background: "rgba(239,68,68,0.08)", borderRadius: "10px", fontSize: "13px" }}>{selectedComp.reportErr}</div>}
+            {selectedComp.report && (() => {
+              const r = selectedComp.report;
+              return [
+                ["🔍 Deep Analysis", r.deepAnalysis],
+                ["📊 Their Strategy", r.theirStrategy],
+                ["🎯 Their Vulnerabilities", r.theirVulnerabilities],
+                ["⚔️ How To Beat Them", r.howToBeatThem],
+                ["🏆 Your Positioning", r.positioningMessage],
+                ["📋 Action Plan", r.actionPlan],
+                ["💡 Key Learning", r.keyLearning],
+              ].filter(([, v]) => safeStr(v)).map(([title, value], i) => (
+                <div key={i} style={{ marginBottom: "14px" }}>
+                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.compLight, textTransform: "uppercase", letterSpacing: "2px", marginBottom: "6px", paddingBottom: "5px", borderBottom: `1px solid ${C.border}` }}>{title}</div>
+                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "9px", padding: "13px", fontSize: "13px", lineHeight: "1.8", color: "rgba(240,246,252,0.82)", whiteSpace: "pre-wrap" }}>{safeStr(value)}</div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1175,17 +1514,23 @@ function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, websiteScore
       <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "12px", flexGrow: 1 }}>{lead.painPoint}</div>
       {saved && <div style={{ fontSize: "10px", color: "#34D399", marginBottom: "6px", fontWeight: "600" }}>✅ Saved · Reports included in session</div>}
 
-      <button onClick={onReport}
-        style={{ width: "100%", padding: "9px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: accentColor, fontSize: "12px", fontWeight: "700", cursor: "pointer", transition: "all 0.2s" }}
-        onMouseEnter={e => { e.currentTarget.style.background = accentGlow; e.currentTarget.style.borderColor = accentColor; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
-        {saved?.report ? "View Report 📋" : "Get Intelligence Report →"}
-      </button>
+      <div style={{ display: "flex", gap: "6px" }}>
+        <button onClick={onReport}
+          style={{ flex: 1, padding: "9px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: accentColor, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
+          onMouseEnter={e => { e.currentTarget.style.background = accentGlow; e.currentTarget.style.borderColor = accentColor; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
+          {saved?.report ? "View Report 📋" : "Get Report →"}
+        </button>
+        <button onClick={onCampaign} title="Build Campaign"
+          style={{ padding: "9px 13px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "14px", cursor: "pointer" }}>
+          📣
+        </button>
+      </div>
     </div>
   );
 }
 
-function SavedLeadCard({ lead, sc, accentColor, websiteScore, onReport, onStatus, onNotes, onDelete, onScoreWebsite }) {
+function SavedLeadCard({ lead, sc, accentColor, websiteScore, onReport, onStatus, onNotes, onDelete, onScoreWebsite, onCampaign }) {
   if (!lead) return null;
   const isB2C = lead.leadType === "b2c" || lead.mode === "b2c";
   const sc2 = sc || scoreColor(70);
@@ -1247,12 +1592,18 @@ function SavedLeadCard({ lead, sc, accentColor, websiteScore, onReport, onStatus
       <textarea value={lead.notes || ""} onChange={e => onNotes(e.target.value)} placeholder="Add notes..."
         style={{ width: "100%", padding: "9px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", color: C.muted, fontSize: "12px", resize: "vertical", minHeight: "52px", fontFamily: "Inter,sans-serif", marginBottom: "8px", outline: "none" }} />
 
-      <button onClick={onReport}
-        style={{ width: "100%", padding: "9px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: accentColor, fontSize: "12px", fontWeight: "700", cursor: "pointer", transition: "all 0.2s" }}
-        onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}>
-        {lead.report ? "View Report 📋" : "Get Intelligence Report →"}
-      </button>
+      <div style={{ display: "flex", gap: "6px" }}>
+        <button onClick={onReport}
+          style={{ flex: 1, padding: "9px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: accentColor, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}>
+          {lead.report ? "View Report 📋" : "Get Report →"}
+        </button>
+        <button onClick={onCampaign} title="Build Campaign"
+          style={{ padding: "9px 13px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "14px", cursor: "pointer" }}>
+          📣
+        </button>
+      </div>
     </div>
   );
 }
