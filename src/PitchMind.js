@@ -4,18 +4,51 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, on
 import { doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, deleteDoc, query, where } from "firebase/firestore";
 
 const C = {
-  bg: "#F1F5F9", bg2: "#FFFFFF", bg3: "#F8FAFC",
-  sidebar: "#FFFFFF", sidebarBorder: "#E2E8F0",
-  border: "#E2E8F0", borderHover: "#CBD5E1",
-  b2b: "#2563EB", b2bLight: "#3B82F6", b2bGlow: "rgba(37,99,235,0.08)", b2bBorder: "rgba(37,99,235,0.2)",
-  b2c: "#7C3AED", b2cLight: "#8B5CF6", b2cGlow: "rgba(124,58,237,0.08)", b2cBorder: "rgba(124,58,237,0.2)",
-  comp: "#059669", compLight: "#10B981", compGlow: "rgba(5,150,105,0.08)", compBorder: "rgba(5,150,105,0.2)",
-  camp: "#D97706", campLight: "#F59E0B", campGlow: "rgba(217,119,6,0.08)", campBorder: "rgba(217,119,6,0.2)",
-  gold: "#F59E0B", goldLight: "#FCD34D",
-  hot: "#EF4444", warm: "#F59E0B", cold: "#10B981",
-  white: "#0F172A", muted: "#64748B", dim: "#94A3B8",
-  cardShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
-  cardShadowHover: "0 4px 16px rgba(37,99,235,0.12)",
+  // Core backgrounds — Vercel style
+  bg: "#fafafa",         // page bg
+  bg2: "#ffffff",        // card/panel bg
+  bg3: "#f4f4f5",        // input/muted bg
+  sidebar: "#09090b",    // dark sidebar like Vercel
+  sidebarHover: "#18181b",
+  sidebarActive: "#27272a",
+  sidebarText: "#a1a1aa",
+  sidebarTextActive: "#ffffff",
+  sidebarBorder: "#27272a",
+
+  // Borders
+  border: "#e4e4e7",
+  borderHover: "#a1a1aa",
+
+  // Blue primary
+  b2b: "#2563eb", b2bLight: "#3b82f6",
+  b2bGlow: "rgba(37,99,235,0.08)", b2bBorder: "rgba(37,99,235,0.25)",
+
+  // Purple B2C
+  b2c: "#7c3aed", b2cLight: "#8b5cf6",
+  b2cGlow: "rgba(124,58,237,0.08)", b2cBorder: "rgba(124,58,237,0.25)",
+
+  // Green competitors
+  comp: "#16a34a", compLight: "#22c55e",
+  compGlow: "rgba(22,163,74,0.08)", compBorder: "rgba(22,163,74,0.25)",
+
+  // Amber campaigns
+  camp: "#d97706", campLight: "#f59e0b",
+  campGlow: "rgba(217,119,6,0.08)", campBorder: "rgba(217,119,6,0.25)",
+
+  gold: "#f59e0b", goldLight: "#fcd34d",
+
+  // Status
+  hot: "#ef4444", warm: "#f59e0b", cold: "#22c55e",
+
+  // Typography
+  white: "#09090b",     // primary text (near black)
+  muted: "#71717a",     // secondary text
+  dim: "#a1a1aa",       // tertiary text
+
+  // Shadows
+  cardShadow: "0 1px 2px rgba(0,0,0,0.05)",
+  cardShadowMd: "0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05)",
+  cardShadowLg: "0 10px 25px -5px rgba(0,0,0,0.08), 0 4px 10px -6px rgba(0,0,0,0.05)",
 };
 
 const PLANS = {
@@ -116,28 +149,138 @@ function exportToCSV(data, filename = "pitchmind-leads.csv") {
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideRight{from{width:0%}to{width:100%}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes loadbar{0%{width:0%;opacity:1}85%{width:90%;opacity:1}100%{width:100%;opacity:0}}
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#F1F5F9;color:#0F172A;font-family:'Inter',sans-serif}
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:#F8FAFC}
-::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:#94A3B8}
-input::placeholder,textarea::placeholder{color:#94A3B8}
-input:focus,textarea:focus{outline:none}
-a{text-decoration:none}
+html{font-size:16px}
+body{
+  background:#fafafa;
+  color:#09090b;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-feature-settings:'cv11','ss01';
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:#a1a1aa}
+
+/* Inputs */
+input,textarea,select{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#a1a1aa;font-size:13px}
+input:focus,textarea:focus,select:focus{
+  outline:none;
+  border-color:#2563eb !important;
+  box-shadow:0 0 0 3px rgba(37,99,235,0.12) !important;
+}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit}
+
+/* Top loading bar */
+.pm-loadbar{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(90deg,#2563eb,#7c3aed,#2563eb);
+  background-size:200% 100%;
+  animation:loadbar 1.8s ease-in-out forwards;
+  z-index:9999;
+  border-radius:0 2px 2px 0;
+}
+
+/* Skeleton loader */
+.pm-skeleton{
+  background:linear-gradient(90deg,#f4f4f5 25%,#e4e4e7 50%,#f4f4f5 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:6px;
+}
+
+/* Cards */
+.pm-card{
+  background:#ffffff;
+  border:1px solid #e4e4e7;
+  border-radius:12px;
+  transition:box-shadow 0.15s,border-color 0.15s,transform 0.15s;
+}
+.pm-card:hover{
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  border-color:#d4d4d8;
+}
+
+/* Buttons */
+.pm-btn-primary{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;
+  background:#2563eb;
+  color:#ffffff;
+  border:none;border-radius:8px;
+  font-size:13px;font-weight:600;
+  cursor:pointer;
+  transition:all 0.15s;
+  letter-spacing:-0.01em;
+}
+.pm-btn-primary:hover{background:#1d4ed8;box-shadow:0 4px 14px rgba(37,99,235,0.35)}
+.pm-btn-primary:active{transform:scale(0.98)}
+
+.pm-btn-secondary{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;
+  background:#ffffff;
+  color:#09090b;
+  border:1px solid #e4e4e7;border-radius:8px;
+  font-size:13px;font-weight:600;
+  cursor:pointer;
+  transition:all 0.15s;
+}
+.pm-btn-secondary:hover{background:#f4f4f5;border-color:#d4d4d8}
+.pm-btn-secondary:active{transform:scale(0.98)}
+
+/* Nav item active */
+.pm-nav-active{background:#27272a !important;color:#ffffff !important}
+.pm-nav-item:hover{background:#18181b}
 `;
 
-function LoadingDots({ color = C.b2bLight }) {
+function LoadingDots({ color = "#2563eb" }) {
   return (
-    <div style={{ display: "flex", justifyContent: "center", gap: "6px", padding: "8px" }}>
+    <div style={{ display: "flex", justifyContent: "center", gap: "5px", padding: "8px" }}>
       {[0, 0.15, 0.3].map((d, i) => (
-        <span key={i} style={{ width: "7px", height: "7px", borderRadius: "50%", background: color, animation: `pulse 1.2s ease-in-out infinite`, animationDelay: `${d}s` }} />
+        <span key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, animation: "pulse 1.2s ease-in-out infinite", animationDelay: `${d}s`, display: "block" }} />
       ))}
     </div>
+  );
+}
+
+function LoadingBar() {
+  return <div style={{ position: "fixed", top: 0, left: 0, height: "2px", background: "linear-gradient(90deg,#2563eb,#7c3aed)", animation: "loadbar 1.8s ease-in-out forwards", zIndex: 9999, borderRadius: "0 2px 2px 0" }} />;
+}
+
+function SkeletonCard() {
+  const s = { background: "linear-gradient(90deg,#f4f4f5 25%,#e4e4e7 50%,#f4f4f5 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite", borderRadius: "6px" };
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e4e4e7", borderRadius: "12px", padding: "22px" }}>
+      <div style={{ ...s, height: "16px", width: "55%", marginBottom: "12px" }} />
+      <div style={{ ...s, height: "12px", width: "38%", marginBottom: "18px" }} />
+      <div style={{ ...s, height: "40px", width: "32%", marginBottom: "14px" }} />
+      <div style={{ ...s, height: "11px", width: "85%", marginBottom: "7px" }} />
+      <div style={{ ...s, height: "11px", width: "60%" }} />
+    </div>
+  );
+}
+
+function Badge({ children, color = "#2563eb" }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 9px", borderRadius: "99px", background: `${color}10`, color, fontSize: "11px", fontWeight: "600", border: `1px solid ${color}20`, letterSpacing: "0.01em" }}>
+      {children}
+    </span>
   );
 }
 
@@ -704,51 +847,102 @@ Return ONLY raw JSON:
 
   // ── PLAN ──
   if (screen === "plan") return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Inter,sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" }}>
+    <div style={{ background: "#09090b", minHeight: "100vh", fontFamily: "'Inter',sans-serif", color: "#ffffff" }}>
       <style>{CSS}</style>
-      <div style={{ maxWidth: "900px", width: "100%" }}>
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <div style={{ fontSize: "13px", fontWeight: "700", letterSpacing: "3px", color: C.b2bLight, marginBottom: "14px" }}>CHOOSE YOUR PLAN</div>
-          <div style={{ fontSize: "36px", fontWeight: "900", letterSpacing: "-1px", marginBottom: "8px" }}>Simple, transparent pricing</div>
-          <div style={{ fontSize: "15px", color: C.muted }}>1 session = 5 credits = 6 leads + full AI reports</div>
+
+      {/* Header */}
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px 32px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "64px" }}>
+          <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
+            <rect width="30" height="30" rx="7" fill="#2563EB"/>
+            <path d="M9 15c0-3.31 2.69-6 6-6s6 2.69 6 6c0 1.5-.55 2.87-1.45 3.92" stroke="white" strokeWidth="1.6" strokeLinecap="round" fill="none"/>
+            <circle cx="15" cy="15" r="2" fill="white"/>
+            <path d="M15 13v-2M15 19v-2M13 15h-2M19 15h-2" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: "16px", fontWeight: "700", color: "#ffffff", letterSpacing: "-0.3px" }}>{"PitchMind"}</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", marginBottom: "32px" }}>
-          {Object.entries(PLANS).map(([key, plan]) => {
-            const isSelected = selPlan === key;
+
+        {/* Hero */}
+        <div style={{ textAlign: "center", marginBottom: "64px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 14px", background: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.3)", borderRadius: "99px", fontSize: "12px", color: "#93c5fd", fontWeight: "600", marginBottom: "24px", letterSpacing: "0.02em" }}>
+            {"✦ SIMPLE PRICING"}
+          </div>
+          <h1 style={{ fontSize: "52px", fontWeight: "800", color: "#ffffff", letterSpacing: "-2px", lineHeight: "1.1", marginBottom: "18px" }}>
+            {"Start finding leads"}
+            <br />
+            <span style={{ background: "linear-gradient(135deg,#3b82f6,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{"today."}</span>
+          </h1>
+          <p style={{ fontSize: "17px", color: "#71717a", maxWidth: "480px", margin: "0 auto", lineHeight: "1.7", fontWeight: "400" }}>
+            {"One platform for B2B leads, B2C intelligence, competitor analysis and campaign building."}
+          </p>
+        </div>
+
+        {/* Pricing cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", marginBottom: "64px" }}>
+          {Object.entries(PLANS).map(([key, p]) => {
+            const isSel = selPlan === key;
             const isPop = key === "growth";
             return (
               <div key={key} onClick={() => setSelPlan(key)}
-                style={{ background: isSelected ? `linear-gradient(135deg, rgba(37,99,235,0.08), rgba(124,58,237,0.08))` : C.bg2, border: `2px solid ${isSelected ? plan.color : C.border}`, borderRadius: "18px", padding: "28px", cursor: "pointer", position: "relative", transition: "all 0.2s", boxShadow: isSelected ? `0 0 30px ${plan.color}20` : "none" }}>
-                {isPop && <div style={{ position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2c})`, color: "#fff", fontSize: "10px", fontWeight: "800", padding: "4px 14px", borderRadius: "20px", letterSpacing: "1px", whiteSpace: "nowrap" }}>MOST POPULAR</div>}
-                <div style={{ fontSize: "32px", fontWeight: "900", color: plan.color, marginBottom: "2px" }}>${plan.price}</div>
-                <div style={{ fontSize: "12px", color: C.dim, marginBottom: "16px" }}>/month</div>
-                <div style={{ fontSize: "18px", fontWeight: "800", marginBottom: "4px" }}>{plan.name}</div>
-                <div style={{ fontSize: "12px", color: C.muted, marginBottom: "16px" }}>{plan.desc}</div>
-                <div style={{ background: `${plan.color}15`, border: `1px solid ${plan.color}30`, borderRadius: "10px", padding: "12px", marginBottom: "18px", textAlign: "center" }}>
-                  <div style={{ fontSize: "22px", fontWeight: "900", color: plan.color }}>{plan.sessions} sessions</div>
-                  <div style={{ fontSize: "11px", color: C.dim }}>{plan.leads} leads/month</div>
-                </div>
-                {plan.features.map((f, i) => (
-                  <div key={i} style={{ fontSize: "12px", color: C.muted, marginBottom: "7px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                    <span style={{ color: plan.color, fontWeight: "700", flexShrink: 0 }}>✓</span>{f}
+                style={{ position: "relative", background: isPop ? "#ffffff" : "#111111", border: `1px solid ${isPop ? "transparent" : isSel ? "#3b82f6" : "#27272a"}`, borderRadius: "16px", padding: "32px", cursor: "pointer", transition: "all 0.2s", boxShadow: isPop ? "0 0 0 1px #3b82f6, 0 20px 60px rgba(59,130,246,0.2)" : isSel ? "0 0 0 1px #3b82f6" : "none" }}>
+                {isPop && (
+                  <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#2563eb,#7c3aed)", color: "#fff", fontSize: "11px", fontWeight: "700", padding: "4px 16px", borderRadius: "99px", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{"MOST POPULAR"}</div>
+                )}
+                <div style={{ marginBottom: "24px" }}>
+                  <div style={{ fontSize: "13px", fontWeight: "600", color: isPop ? "#71717a" : "#52525b", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{p.name}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "52px", fontWeight: "800", color: isPop ? "#09090b" : "#ffffff", letterSpacing: "-2px", lineHeight: 1 }}>{"$"}{p.price}</span>
+                    <span style={{ fontSize: "14px", color: isPop ? "#71717a" : "#52525b", fontWeight: "400" }}>{"/month"}</span>
                   </div>
-                ))}
+                  <div style={{ fontSize: "13px", color: isPop ? "#71717a" : "#52525b" }}>{p.desc}</div>
+                </div>
+
+                <button onClick={e => { e.stopPropagation(); setSelPlan(key); doPlan(); }}
+                  style={{ width: "100%", padding: "12px", background: isPop ? "#2563eb" : isSel ? "#2563eb" : "transparent", border: `1px solid ${isPop ? "transparent" : "#3b82f6"}`, borderRadius: "9px", color: isPop || isSel ? "#ffffff" : "#3b82f6", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: "28px", transition: "all 0.15s", letterSpacing: "-0.01em" }}>
+                  {"Get started →"}
+                </button>
+
+                <div style={{ borderTop: `1px solid ${isPop ? "#e4e4e7" : "#27272a"}`, paddingTop: "22px" }}>
+                  <div style={{ fontSize: "12px", fontWeight: "600", color: isPop ? "#09090b" : "#a1a1aa", marginBottom: "14px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{"What's included"}</div>
+                  {p.features.map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "11px" }}>
+                      <svg width="16" height="16" viewBox="0 0 16 16" style={{ flexShrink: 0, marginTop: "1px" }}>
+                        <circle cx="8" cy="8" r="7" fill={isPop ? "#2563eb" : "#27272a"}/>
+                        <path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                      </svg>
+                      <span style={{ fontSize: "13px", color: isPop ? "#374151" : "#a1a1aa", lineHeight: "1.5", fontWeight: "400" }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  {[
+                    { icon: "🏢", label: "B2B Leads", ok: true },
+                    { icon: "👥", label: "B2C Leads", ok: true },
+                    { icon: "⭐", label: "Review Leads", ok: p.b2cReviews },
+                    { icon: "🚀", label: "Enrichment", ok: p.b2cApollo },
+                    { icon: "👥", label: "Social Finder", ok: p.b2cSocial },
+                    { icon: "🎨", label: "Higgsfield", ok: p.higgsfield },
+                  ].map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <span style={{ fontSize: "12px", opacity: f.ok ? 1 : 0.3 }}>{f.icon}</span>
+                      <span style={{ fontSize: "11px", color: f.ok ? (isPop ? "#374151" : "#71717a") : (isPop ? "#d1d5db" : "#3f3f46"), fontWeight: f.ok ? "500" : "400" }}>{f.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })}
         </div>
-        <div style={{ textAlign: "center" }}>
-          <button onClick={doPlan}
-            style={{ padding: "14px 56px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2c})`, border: "none", borderRadius: "12px", color: "#fff", fontSize: "15px", fontWeight: "800", cursor: "pointer", boxShadow: "0 4px 24px rgba(37,99,235,0.3)", letterSpacing: "0.5px" }}>
-            Start with {PLANS[selPlan].name}{" →"}
-          </button>
-          <div style={{ fontSize: "12px", color: C.dim, marginTop: "12px" }}>Cancel anytime. No setup fees.</div>
+
+        {/* Footer note */}
+        <div style={{ textAlign: "center", paddingBottom: "48px" }}>
+          <p style={{ fontSize: "13px", color: "#52525b" }}>{"No setup fees · Cancel anytime · All plans include AI reports & one-click outreach"}</p>
         </div>
       </div>
     </div>
   );
 
-  // ── MODE SELECTION ──
   if (screen === "mode") return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Inter,sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" }}>
       <style>{CSS}</style>
@@ -1443,42 +1637,52 @@ Return ONLY raw JSON:
       <style>{CSS}</style>
 
       {/* SIDEBAR */}
-      <div style={{ width:sidebarCollapsed?"64px":"240px", background:C.bg2, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", transition:"width 0.25s ease", flexShrink:0, position:"sticky", top:0, height:"100vh", overflowY:"auto", overflowX:"hidden" }}>
-        <div style={{ padding:sidebarCollapsed?"18px 16px":"18px 20px", display:"flex", alignItems:"center", gap:"10px", borderBottom:`1px solid ${C.border}`, cursor:"pointer", minHeight:"64px" }} onClick={()=>setActivePage("dashboard")}>
-          <div style={{ flexShrink:0 }}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#2563EB"/>
-              <ellipse cx="16" cy="14" rx="7" ry="6" fill="none" stroke="white" strokeWidth="1.8"/>
-              <path d="M10 14c0-1 1-3 3-4M18 10c2 1 4 2.5 4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              <circle cx="16" cy="14" r="2" fill="white"/>
-              <path d="M13 20l3 4 3-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="24" cy="8" r="3.5" fill="#F59E0B"/>
-              <path d="M22.8 8l.8.8 1.7-1.6" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+      <div style={{ width: sidebarCollapsed ? "60px" : "232px", background: "#09090b", borderRight: "1px solid #27272a", display: "flex", flexDirection: "column", transition: "width 0.22s cubic-bezier(0.4,0,0.2,1)", flexShrink: 0, position: "sticky", top: 0, height: "100vh", overflowY: "auto", overflowX: "hidden", zIndex: 40 }}>
+
+        {/* Logo */}
+        <div style={{ padding: sidebarCollapsed ? "16px 14px" : "16px 20px", display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #27272a", minHeight: "60px", cursor: "pointer", transition: "all 0.15s" }} onClick={() => setActivePage("dashboard")}
+          onMouseEnter={e => e.currentTarget.style.background = "#18181b"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          {/* PM Logo — geometric diamond */}
+          <div style={{ flexShrink: 0, width: "30px", height: "30px" }}>
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+              <rect width="30" height="30" rx="7" fill="#2563EB"/>
+              {/* Brain shape */}
+              <path d="M9 15c0-3.31 2.69-6 6-6s6 2.69 6 6c0 1.5-.55 2.87-1.45 3.92" stroke="white" strokeWidth="1.6" strokeLinecap="round" fill="none"/>
+              <path d="M11 18.5c.6.95 1.54 1.66 2.64 1.93" stroke="white" strokeWidth="1.6" strokeLinecap="round"/>
+              <circle cx="15" cy="15" r="2" fill="white"/>
+              <path d="M15 13v-2M15 19v-2" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+              <path d="M13 15h-2M19 15h-2" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+              <circle cx="23" cy="7" r="3" fill="#f59e0b"/>
+              <path d="M21.8 7l.8.8 1.7-1.6" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          {!sidebarCollapsed&&(
-            <div style={{ overflow:"hidden" }}>
-              <div style={{ fontSize:"15px", fontWeight:"900", color:C.b2b, letterSpacing:"-0.3px", whiteSpace:"nowrap" }}>{"PitchMind"}</div>
-              <div style={{ fontSize:"10px", color:C.muted, fontWeight:"500", whiteSpace:"nowrap" }}>{"AI Lead Intelligence"}</div>
+          {!sidebarCollapsed && (
+            <div style={{ overflow: "hidden", minWidth: 0 }}>
+              <div style={{ fontSize: "15px", fontWeight: "700", color: "#ffffff", letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>{"PitchMind"}</div>
+              <div style={{ fontSize: "10px", color: "#71717a", whiteSpace: "nowrap" }}>{"AI Lead Intelligence"}</div>
             </div>
           )}
         </div>
 
-        <div style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
-          {navGroups.map((group,gi)=>(
-            <div key={gi} style={{ marginBottom:"4px" }}>
-              {!sidebarCollapsed&&<div style={{ fontSize:"10px", fontWeight:"700", color:C.dim, letterSpacing:"0.8px", textTransform:"uppercase", padding:"8px 10px 4px" }}>{group.label}</div>}
-              {sidebarCollapsed&&gi>0&&<div style={{ height:"1px", background:C.border, margin:"6px 8px" }} />}
-              {group.items.map(item=>{
-                const isActive=activePage===item.key;
+        {/* Nav items */}
+        <div style={{ flex: 1, padding: "8px 8px", overflowY: "auto" }}>
+          {navGroups.map((group, gi) => (
+            <div key={gi} style={{ marginBottom: "4px" }}>
+              {!sidebarCollapsed && (
+                <div style={{ fontSize: "10px", fontWeight: "600", color: "#52525b", letterSpacing: "0.06em", textTransform: "uppercase", padding: "10px 12px 4px" }}>{group.label}</div>
+              )}
+              {sidebarCollapsed && gi > 0 && <div style={{ height: "1px", background: "#27272a", margin: "6px 8px" }} />}
+              {group.items.map(item => {
+                const isActive = activePage === item.key;
                 return (
-                  <button key={item.key} onClick={()=>setActivePage(item.key)} title={sidebarCollapsed?item.label:""}
-                    style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:sidebarCollapsed?"10px 0":"9px 12px", border:"none", borderRadius:"8px", cursor:"pointer", fontSize:"13px", fontWeight:isActive?"700":"500", textAlign:"left", background:isActive?C.b2bGlow:"transparent", color:isActive?C.b2b:C.muted, transition:"all 0.15s", marginBottom:"1px", justifyContent:sidebarCollapsed?"center":"flex-start" }}
-                    onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.bg3;e.currentTarget.style.color=C.white;}}}
-                    onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.muted;}}}>
-                    <span style={{ fontSize:"16px", flexShrink:0 }}>{item.icon}</span>
-                    {!sidebarCollapsed&&<span style={{ whiteSpace:"nowrap" }}>{item.label}</span>}
-                    {!sidebarCollapsed&&isActive&&<div style={{ width:"5px", height:"5px", borderRadius:"50%", background:C.b2b, marginLeft:"auto" }} />}
+                  <button key={item.key} onClick={() => setActivePage(item.key)} title={sidebarCollapsed ? item.label : ""}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: "9px", padding: sidebarCollapsed ? "9px 0" : "8px 12px", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "13px", fontWeight: isActive ? "600" : "400", textAlign: "left", background: isActive ? "#27272a" : "transparent", color: isActive ? "#ffffff" : "#a1a1aa", transition: "all 0.12s", marginBottom: "1px", justifyContent: sidebarCollapsed ? "center" : "flex-start", letterSpacing: "-0.01em" }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = "#18181b"; e.currentTarget.style.color = "#e4e4e7"; }}}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#a1a1aa"; }}}>
+                    <span style={{ fontSize: "15px", flexShrink: 0, lineHeight: 1 }}>{item.icon}</span>
+                    {!sidebarCollapsed && <span style={{ whiteSpace: "nowrap", overflow: "hidden" }}>{item.label}</span>}
+                    {!sidebarCollapsed && isActive && <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#3b82f6", marginLeft: "auto", flexShrink: 0 }} />}
                   </button>
                 );
               })}
@@ -1486,39 +1690,56 @@ Return ONLY raw JSON:
           ))}
         </div>
 
-        {!sidebarCollapsed&&(
-          <div style={{ padding:"12px 14px", borderTop:`1px solid ${C.border}`, background:C.bg3 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
-              <div style={{ fontSize:"11px", fontWeight:"600", color:C.muted }}>{"Sessions"}</div>
-              <div style={{ fontSize:"11px", fontWeight:"700", color:C.b2b }}>{sessionsLeft}{" left"}</div>
+        {/* Credits */}
+        {!sidebarCollapsed && (
+          <div style={{ padding: "12px 14px", borderTop: "1px solid #27272a" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "7px" }}>
+              <span style={{ fontSize: "11px", color: "#71717a", fontWeight: "500" }}>{"Sessions"}</span>
+              <span style={{ fontSize: "11px", color: "#3b82f6", fontWeight: "700" }}>{sessionsLeft}{" left"}</span>
             </div>
-            <div style={{ width:"100%", height:"4px", background:C.border, borderRadius:"2px", overflow:"hidden", marginBottom:"6px" }}>
-              <div style={{ width:`${creditPct}%`, height:"100%", background:C.b2b, borderRadius:"2px" }} />
+            <div style={{ width: "100%", height: "3px", background: "#27272a", borderRadius: "99px", overflow: "hidden", marginBottom: "8px" }}>
+              <div style={{ width: `${creditPct}%`, height: "100%", background: "linear-gradient(90deg,#2563eb,#7c3aed)", borderRadius: "99px", transition: "width 0.5s ease" }} />
             </div>
-            <div style={{ fontSize:"10px", color:C.dim, fontWeight:"600" }}>{plan.name}{" Plan"}</div>
+            <div style={{ fontSize: "10px", color: "#52525b", fontWeight: "500" }}>{plan.name}{" Plan · $"}{plan.price}{"/mo"}</div>
           </div>
         )}
 
-        <button onClick={()=>setSidebarCollapsed(s=>!s)}
-          style={{ padding:"14px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:sidebarCollapsed?"center":"flex-start", gap:"8px", color:C.muted, fontSize:"12px", fontWeight:"600", transition:"all 0.15s", width:"100%" }}
-          onMouseEnter={e=>{e.currentTarget.style.background=C.bg3;e.currentTarget.style.color=C.white;}}
-          onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.muted;}}>
-          <span style={{ fontSize:"14px", display:"inline-block", transition:"transform 0.25s", transform:sidebarCollapsed?"rotate(180deg)":"none" }}>{"◀"}</span>
-          {!sidebarCollapsed&&<span>{"Collapse"}</span>}
+        {/* Collapse */}
+        <button onClick={() => setSidebarCollapsed(s => !s)}
+          style={{ padding: "13px", background: "transparent", border: "none", borderTop: "1px solid #27272a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: sidebarCollapsed ? "center" : "flex-start", gap: "8px", color: "#52525b", fontSize: "12px", fontWeight: "500", transition: "all 0.15s", width: "100%" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#18181b"; e.currentTarget.style.color = "#a1a1aa"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#52525b"; }}>
+          <span style={{ fontSize: "11px", display: "inline-block", transition: "transform 0.22s", transform: sidebarCollapsed ? "rotate(180deg)" : "none" }}>{"⟨"}</span>
+          {!sidebarCollapsed && <span>{"Collapse"}</span>}
         </button>
       </div>
 
       {/* MAIN */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
-        <div style={{ height:"56px", background:C.bg2, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 0 28px", position:"sticky", top:0, zIndex:50 }}>
-          <div style={{ fontSize:"14px", fontWeight:"700", color:C.white }}>
-            {navGroups.flatMap(g=>g.items).find(i=>i.key===activePage)?.label||"Dashboard"}
+        <div style={{ height: "56px", background: "#ffffff", borderBottom: "1px solid #e4e4e7", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(8px)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "13px", color: "#71717a" }}>{"PitchMind"}</span>
+            <span style={{ color: "#d4d4d8" }}>{" / "}</span>
+            <span style={{ fontSize: "13px", fontWeight: "600", color: "#09090b" }}>
+              {navGroups.flatMap(g => g.items).find(i => i.key === activePage)?.label || "Dashboard"}
+            </span>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-            {userData.credits<CREDITS_PER_SESSION&&<div style={{ padding:"4px 12px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"20px", fontSize:"11px", color:"#EF4444", fontWeight:"600" }}>{"Low credits"}</div>}
-            <div style={{ padding:"4px 12px", background:`${plan.color}10`, border:`1px solid ${plan.color}25`, borderRadius:"20px", fontSize:"11px", fontWeight:"700", color:plan.color }}>{plan.name}</div>
-            <div style={{ fontSize:"12px", color:C.muted }}>{user.email}</div>
-            <button onClick={doLogout} style={{ padding:"6px 14px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:"7px", color:C.muted, cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>{"Logout"}</button>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {(scanning || csvProcessing || compScanning || campaignLoading || reviewLoading) && <LoadingBar />}
+            {userData.credits < CREDITS_PER_SESSION && (
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", padding: "4px 10px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "99px", fontSize: "11px", color: "#dc2626", fontWeight: "600" }}>
+                <span>{"⚠"}</span><span>{"Low credits"}</span>
+              </div>
+            )}
+            <div style={{ padding: "4px 10px", background: `${plan.color}10`, border: `1px solid ${plan.color}20`, borderRadius: "99px", fontSize: "11px", fontWeight: "600", color: plan.color }}>{plan.name}</div>
+            <div style={{ width: "1px", height: "20px", background: "#e4e4e7" }} />
+            <div style={{ fontSize: "12px", color: "#71717a", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+            <button onClick={doLogout}
+              style={{ padding: "6px 14px", background: "transparent", border: "1px solid #e4e4e7", borderRadius: "7px", color: "#71717a", cursor: "pointer", fontSize: "12px", fontWeight: "500", transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#f4f4f5"; e.currentTarget.style.color = "#09090b"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#71717a"; }}>
+              {"Logout"}
+            </button>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto" }}>
@@ -1633,80 +1854,76 @@ Return ONLY raw JSON:
   );
 }
 
-function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, websiteScore, onReport }) {
+function LeadCard({ lead, saved, sc, mode, accentColor, accentGlow, websiteScore, onReport, onCampaign }) {
   if (!lead) return null;
   const isB2C = lead.leadType === "b2c" || mode === "b2c";
   return (
-    <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px", display: "flex", flexDirection: "column", transition: "all 0.2s" }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.4)"; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
-        <div style={{ flex: 1, paddingRight: "8px" }}>
-          <div style={{ fontSize: "14px", fontWeight: "800", marginBottom: "2px" }}>{lead.name}</div>
-          <div style={{ fontSize: "10px", color: accentColor, fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-            {isB2C ? lead.platform : `${lead.type || ""} · ${lead.location || ""}`}
-          </div>
+    <div style={{ background: "#ffffff", border: "1px solid #e4e4e7", borderRadius: "14px", padding: "22px", display: "flex", flexDirection: "column", transition: "all 0.18s", cursor: "default" }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"; e.currentTarget.style.borderColor = "#d4d4d8"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "#e4e4e7"; e.currentTarget.style.transform = "translateY(0)"; }}>
+
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+        <div style={{ flex: 1, paddingRight: "10px" }}>
+          <div style={{ fontSize: "16px", fontWeight: "700", color: "#09090b", marginBottom: "3px", letterSpacing: "-0.2px" }}>{lead.name}</div>
+          <div style={{ fontSize: "12px", color: "#71717a", fontWeight: "500" }}>{isB2C ? lead.platform : `${lead.type || ""} · ${lead.location || ""}`}</div>
         </div>
-        <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: "8px", padding: "3px 8px", textAlign: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: "8px", fontWeight: "800", letterSpacing: "1px" }}>{sc.label}</div>
-          <div style={{ fontSize: "15px", fontWeight: "900", lineHeight: 1.1 }}>{lead.score || 0}</div>
+        <div style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: "8px", padding: "5px 10px", textAlign: "center", flexShrink: 0 }}>
+          <div style={{ fontSize: "9px", fontWeight: "700", letterSpacing: "0.05em", marginBottom: "1px", textTransform: "uppercase" }}>{sc.label}</div>
+          <div style={{ fontSize: "20px", fontWeight: "800", lineHeight: 1 }}>{lead.score || 0}</div>
         </div>
       </div>
 
-      {!isB2C && (
-        <div style={{ marginBottom: "8px" }}>
-          {lead.phone && <div style={{ fontSize: "11px", color: C.muted, marginBottom: "2px" }}>📞 {lead.phone}</div>}
-          {lead.website === "No website" ? (
-            <div style={{ fontSize: "11px", color: "#F87171", marginBottom: "2px" }}>{"🌐 ❌ No website"}</div>
-          ) : lead.website ? (
-            <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: "11px", color: accentColor, marginBottom: "2px", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              🌐 {lead.website.replace(/https?:\/\//, "")} ↗
-            </a>
-          ) : null}
-          <div style={{ fontSize: "11px", color: C.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {lead.address}</div>
-          {lead.rating && <div style={{ fontSize: "11px", color: "#FCD34D", marginTop: "2px" }}>⭐ {lead.rating}/5 ({lead.reviews} reviews)</div>}
-          {/* Website Score Badge */}
-          {websiteScore && (
-            <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
-              <div style={{ fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "6px", background: websiteScore.score >= 70 ? "rgba(16,185,129,0.15)" : websiteScore.score >= 40 ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)", color: websiteScore.score >= 70 ? "#34D399" : websiteScore.score >= 40 ? "#FCD34D" : "#F87171", border: `1px solid ${websiteScore.score >= 70 ? "rgba(16,185,129,0.3)" : websiteScore.score >= 40 ? "rgba(245,158,11,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                🌐 {websiteScore.score}/100
-              </div>
-              <span style={{ fontSize: "10px", color: C.dim }}>{websiteScore.verdict?.slice(0, 40)}...</span>
-            </div>
-          )}
+      {/* Details */}
+      {!isB2C ? (
+        <div style={{ marginBottom: "14px" }}>
+          {lead.phone && <div style={{ fontSize: "12px", color: "#52525b", marginBottom: "4px", display: "flex", alignItems: "center", gap: "5px" }}>{"📞 "}{lead.phone}</div>}
+          {lead.website === "No website"
+            ? <div style={{ fontSize: "12px", color: "#ef4444", marginBottom: "4px" }}>{"No website"}</div>
+            : lead.website
+              ? <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: "12px", color: accentColor, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: "4px" }}>
+                  {lead.website.replace(/https?:\/\//, "")}{"  ↗"}
+                </a>
+              : null}
+          {lead.rating && <div style={{ fontSize: "12px", color: "#d97706", fontWeight: "600" }}>{"⭐ "}{lead.rating}{"/5"}{lead.reviews ? ` (${lead.reviews} reviews)` : ""}</div>}
+          {websiteScore && <div style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "600", padding: "2px 8px", borderRadius: "6px", background: websiteScore.score >= 70 ? "rgba(22,163,74,0.08)" : "rgba(239,68,68,0.08)", color: websiteScore.score >= 70 ? "#16a34a" : "#ef4444" }}>{"Site: "}{websiteScore.score}{"/100"}</div>}
+        </div>
+      ) : (
+        <div style={{ marginBottom: "14px" }}>
+          {lead.keyMetric && <div style={{ fontSize: "12px", color: "#d97706", fontWeight: "600", marginBottom: "4px" }}>{"📊 "}{lead.keyMetric}</div>}
+          <div style={{ fontSize: "12px", color: "#52525b", marginBottom: "4px", lineHeight: "1.5" }}>{lead.engagement}</div>
+          {lead.bestApproach && <div style={{ fontSize: "12px", color: accentColor, fontWeight: "600" }}>{lead.bestApproach}</div>}
         </div>
       )}
 
-      {isB2C && (
-        <div style={{ marginBottom: "8px" }}>
-          {lead.keyMetric && <div style={{ fontSize: "11px", color: "#FCD34D", fontWeight: "600", marginBottom: "2px" }}>📊 {lead.keyMetric}</div>}
-          <div style={{ fontSize: "11px", color: C.muted, marginBottom: "2px", lineHeight: "1.4" }}>📱 {lead.engagement}</div>
-          {lead.bestApproach && <div style={{ fontSize: "11px", color: accentColor, fontWeight: "600" }}>💬 {lead.bestApproach}</div>}
-        </div>
-      )}
-
-      {lead.weaknesses?.length > 0 && (
-        <div style={{ marginBottom: "8px", display: "flex", flexWrap: "wrap", gap: "3px" }}>
+      {/* Weaknesses */}
+      {(lead.weaknesses || []).length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "12px" }}>
           {lead.weaknesses.map((w, i) => (
-            <span key={i} style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: "5px", padding: "2px 6px", fontSize: "10px", color: "#F87171", fontWeight: "600" }}>⚠ {w}</span>
+            <span key={i} style={{ fontSize: "10px", fontWeight: "600", padding: "2px 7px", borderRadius: "4px", background: "rgba(239,68,68,0.07)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.15)" }}>{w}</span>
           ))}
         </div>
       )}
 
-      <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6", marginBottom: "12px", flexGrow: 1 }}>{lead.painPoint}</div>
-      {saved && <div style={{ fontSize: "10px", color: "#34D399", marginBottom: "6px", fontWeight: "600" }}>{"✅ Saved · Reports included in session"}</div>}
+      {/* Pain point */}
+      <div style={{ fontSize: "12px", color: "#71717a", lineHeight: "1.6", marginBottom: "14px", flexGrow: 1 }}>{lead.painPoint}</div>
 
-      <div style={{ display: "flex", gap: "6px" }}>
+      {saved && <div style={{ fontSize: "11px", color: "#16a34a", marginBottom: "8px", fontWeight: "600" }}>{"✓ Saved"}</div>}
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "8px" }}>
         <button onClick={onReport}
-          style={{ flex: 1, padding: "9px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: accentColor, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
-          onMouseEnter={e => { e.currentTarget.style.background = accentGlow; e.currentTarget.style.borderColor = accentColor; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
-          {saved?.report ? "View Report 📋" : "Get Report →"}
+          style={{ flex: 1, padding: "9px 14px", background: accentColor, border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s", letterSpacing: "-0.01em" }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}>
+          {saved?.report ? "View Report" : "Get Report"}
         </button>
         <button onClick={onCampaign} title="Build Campaign"
-          style={{ padding: "9px 13px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "14px", cursor: "pointer" }}>
-          📣
+          style={{ padding: "9px 12px", background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)", borderRadius: "8px", color: "#d97706", fontSize: "14px", cursor: "pointer", transition: "all 0.15s" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(217,119,6,0.15)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "rgba(217,119,6,0.08)"; }}>
+          {"📣"}
         </button>
       </div>
     </div>
@@ -1717,79 +1934,78 @@ function SavedLeadCard({ lead, sc, accentColor, websiteScore, onReport, onStatus
   if (!lead) return null;
   const isB2C = lead.leadType === "b2c" || lead.mode === "b2c";
   const sc2 = sc || scoreColor(70);
+  const statuses = [
+    { value: "new", label: "New", color: "#6366f1" },
+    { value: "contacted", label: "Contacted", color: "#2563eb" },
+    { value: "inprogress", label: "In Progress", color: "#d97706" },
+    { value: "closed", label: "Closed", color: "#16a34a" },
+    { value: "lost", label: "Lost", color: "#ef4444" },
+  ];
   return (
-    <div style={{ background: C.bg2, border: `1px solid ${lead.status === "closed" ? "rgba(16,185,129,0.2)" : lead.status === "inprogress" ? "rgba(245,158,11,0.15)" : C.border}`, borderRadius: "14px", padding: "18px", display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+    <div style={{ background: "#ffffff", border: `1px solid ${lead.status === "closed" ? "rgba(22,163,74,0.25)" : lead.status === "inprogress" ? "rgba(217,119,6,0.2)" : "#e4e4e7"}`, borderRadius: "14px", padding: "20px", display: "flex", flexDirection: "column", transition: "all 0.15s" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
         <div style={{ flex: 1, paddingRight: "8px" }}>
-          <div style={{ fontSize: "13px", fontWeight: "800", marginBottom: "2px" }}>{lead.name}</div>
-          <div style={{ fontSize: "10px", color: accentColor, fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-            {isB2C ? (lead.platform || "B2C") : `${lead.type || ""} · ${lead.location || ""}`}
-          </div>
+          <div style={{ fontSize: "15px", fontWeight: "700", color: "#09090b", marginBottom: "2px", letterSpacing: "-0.2px" }}>{lead.name}</div>
+          <div style={{ fontSize: "11px", color: "#71717a" }}>{isB2C ? (lead.platform || "B2C") : `${lead.type || ""} · ${lead.location || ""}`}</div>
         </div>
-        <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-          <div style={{ background: sc2.bg, color: sc2.color, border: `1px solid ${sc2.border}`, borderRadius: "6px", padding: "3px 7px", textAlign: "center" }}>
-            <div style={{ fontSize: "8px", fontWeight: "800" }}>{sc2.label}</div>
-            <div style={{ fontSize: "13px", fontWeight: "900", lineHeight: 1.1 }}>{lead.score || 0}</div>
+        <div style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
+          <div style={{ background: sc2.bg, color: sc2.color, border: `1px solid ${sc2.border}`, borderRadius: "7px", padding: "4px 8px", textAlign: "center" }}>
+            <div style={{ fontSize: "9px", fontWeight: "700", letterSpacing: "0.05em", textTransform: "uppercase" }}>{sc2.label}</div>
+            <div style={{ fontSize: "16px", fontWeight: "800", lineHeight: 1 }}>{lead.score || 0}</div>
           </div>
-          <button onClick={onDelete} style={{ width: "26px", height: "26px", background: "transparent", border: `1px solid rgba(239,68,68,0.2)`, borderRadius: "6px", color: "rgba(239,68,68,0.5)", cursor: "pointer", fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+          <button onClick={onDelete} style={{ width: "28px", height: "28px", background: "transparent", border: "1px solid #fee2e2", borderRadius: "6px", color: "#fca5a5", cursor: "pointer", fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#ef4444"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#fca5a5"; }}>{"✕"}</button>
         </div>
       </div>
 
-      <div style={{ marginBottom: "8px" }}>
-        {!isB2C ? (
-          <>
-            {lead.phone && <div style={{ fontSize: "11px", color: C.muted, marginBottom: "2px" }}>📞 {lead.phone}</div>}
-            {lead.website === "No website" ? <div style={{ fontSize: "11px", color: "#F87171", marginBottom: "2px" }}>{"🌐 ❌ No website"}</div>
-              : lead.website ? <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: accentColor, marginBottom: "2px", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>🌐 {lead.website.replace(/https?:\/\//, "")} ↗</a> : null}
-            {lead.rating && <div style={{ fontSize: "11px", color: "#FCD34D" }}>⭐ {lead.rating}/5</div>}
-            {websiteScore ? (
-              <div style={{ marginTop: "4px", fontSize: "10px", fontWeight: "700", display: "inline-block", padding: "2px 8px", borderRadius: "6px", background: websiteScore.score >= 70 ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: websiteScore.score >= 70 ? "#34D399" : "#F87171" }}>
-                🌐 Website: {websiteScore.score}/100
-              </div>
-            ) : lead.website && lead.website !== "No website" && (
-              <button onClick={onScoreWebsite} style={{ marginTop: "4px", fontSize: "10px", color: accentColor, background: "transparent", border: `1px solid ${accentColor}40`, borderRadius: "6px", padding: "2px 8px", cursor: "pointer" }}>
-                {"Score website →"}
-              </button>
-            )}
-          </>
-        ) : (
-          <>
-            {lead.keyMetric && <div style={{ fontSize: "11px", color: "#FCD34D", fontWeight: "600", marginBottom: "2px" }}>📊 {lead.keyMetric}</div>}
-            {lead.bestApproach && <div style={{ fontSize: "11px", color: accentColor }}>💬 {lead.bestApproach}</div>}
-          </>
-        )}
-      </div>
-
-      <div style={{ marginBottom: "8px" }}>
-        <div style={{ fontSize: "9px", color: C.dim, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "5px" }}>STATUS</div>
-        <div style={{ display: "flex", gap: "3px", flexWrap: "wrap" }}>
-          {STATUS_OPTIONS.map(s => (
-            <button key={s.value} onClick={() => onStatus(s.value)}
-              style={{ padding: "3px 7px", borderRadius: "6px", border: `1px solid ${lead.status === s.value ? s.color : "rgba(255,255,255,0.06)"}`, background: lead.status === s.value ? s.bg : "transparent", color: lead.status === s.value ? s.color : "rgba(240,246,252,0.25)", cursor: "pointer", fontSize: "10px", fontWeight: "600", transition: "all 0.15s" }}>
-              {s.label}
-            </button>
-          ))}
+      {!isB2C ? (
+        <div style={{ marginBottom: "10px" }}>
+          {lead.phone && <div style={{ fontSize: "12px", color: "#52525b", marginBottom: "3px" }}>{"📞 "}{lead.phone}</div>}
+          {lead.website && lead.website !== "No website"
+            ? <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: accentColor, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: "3px" }}>{lead.website.replace(/https?:\/\//, "")}{"  ↗"}</a>
+            : <div style={{ fontSize: "12px", color: "#ef4444" }}>{"No website"}</div>}
+          {lead.rating && <div style={{ fontSize: "12px", color: "#d97706", fontWeight: "600" }}>{"⭐ "}{lead.rating}{"/5"}</div>}
+          {websiteScore
+            ? <div style={{ marginTop: "5px", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: "600", padding: "2px 7px", borderRadius: "5px", background: websiteScore.score >= 70 ? "rgba(22,163,74,0.08)" : "rgba(239,68,68,0.08)", color: websiteScore.score >= 70 ? "#16a34a" : "#ef4444" }}>{"Site: "}{websiteScore.score}{"/100"}</div>
+            : lead.website && lead.website !== "No website" && <button onClick={onScoreWebsite} style={{ marginTop: "4px", fontSize: "10px", color: accentColor, background: "transparent", border: `1px solid ${accentColor}30`, borderRadius: "5px", padding: "2px 8px", cursor: "pointer" }}>{"Score website"}</button>}
         </div>
+      ) : (
+        <div style={{ marginBottom: "10px" }}>
+          {lead.keyMetric && <div style={{ fontSize: "12px", color: "#d97706", fontWeight: "600" }}>{"📊 "}{lead.keyMetric}</div>}
+          {lead.bestApproach && <div style={{ fontSize: "12px", color: accentColor }}>{"💬 "}{lead.bestApproach}</div>}
+        </div>
+      )}
+
+      {/* Status pills */}
+      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "10px" }}>
+        {statuses.map(s => (
+          <button key={s.value} onClick={() => onStatus(s.value)}
+            style={{ padding: "3px 9px", borderRadius: "99px", border: `1px solid ${lead.status === s.value ? s.color : "#e4e4e7"}`, background: lead.status === s.value ? `${s.color}10` : "transparent", color: lead.status === s.value ? s.color : "#a1a1aa", cursor: "pointer", fontSize: "10px", fontWeight: "600", transition: "all 0.12s" }}>
+            {s.label}
+          </button>
+        ))}
       </div>
 
       <textarea value={lead.notes || ""} onChange={e => onNotes(e.target.value)} placeholder="Add notes..."
-        style={{ width: "100%", padding: "9px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", color: C.muted, fontSize: "12px", resize: "vertical", minHeight: "52px", fontFamily: "Inter,sans-serif", marginBottom: "8px", outline: "none" }} />
+        style={{ width: "100%", padding: "8px 10px", background: "#f4f4f5", border: "1px solid #e4e4e7", borderRadius: "7px", color: "#09090b", fontSize: "12px", resize: "vertical", minHeight: "46px", fontFamily: "Inter,sans-serif", marginBottom: "10px", lineHeight: "1.5" }} />
 
-      <div style={{ display: "flex", gap: "6px" }}>
+      <div style={{ display: "flex", gap: "7px" }}>
         <button onClick={onReport}
-          style={{ flex: 1, padding: "9px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", color: accentColor, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}>
-          {lead.report ? "View Report 📋" : "Get Report →"}
+          style={{ flex: 1, padding: "9px", background: accentColor, border: "none", borderRadius: "8px", color: "#fff", fontSize: "12px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s", letterSpacing: "-0.01em" }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
+          {lead.report ? "View Report" : "Get Report"}
         </button>
         <button onClick={onCampaign} title="Build Campaign"
-          style={{ padding: "9px 13px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "14px", cursor: "pointer" }}>
-          📣
+          style={{ padding: "9px 12px", background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)", borderRadius: "8px", color: "#d97706", fontSize: "14px", cursor: "pointer" }}>
+          {"📣"}
         </button>
       </div>
     </div>
   );
 }
+
 
 export default function PitchMind() {
   return <ErrorBoundary><PitchMindApp /></ErrorBoundary>;
