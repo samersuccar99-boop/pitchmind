@@ -4,15 +4,18 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, on
 import { doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, deleteDoc, query, where } from "firebase/firestore";
 
 const C = {
-  bg: "#080B0F", bg2: "#0D1117", bg3: "#161B22",
-  border: "rgba(255,255,255,0.06)", borderHover: "rgba(255,255,255,0.12)",
-  b2b: "#2563EB", b2bLight: "#3B82F6", b2bGlow: "rgba(37,99,235,0.15)", b2bBorder: "rgba(37,99,235,0.3)",
-  b2c: "#7C3AED", b2cLight: "#8B5CF6", b2cGlow: "rgba(124,58,237,0.15)", b2cBorder: "rgba(124,58,237,0.3)",
-  gold: "#F59E0B", goldLight: "#FCD34D", goldGlow: "rgba(245,158,11,0.15)",
+  bg: "#F1F5F9", bg2: "#FFFFFF", bg3: "#F8FAFC",
+  sidebar: "#FFFFFF", sidebarBorder: "#E2E8F0",
+  border: "#E2E8F0", borderHover: "#CBD5E1",
+  b2b: "#2563EB", b2bLight: "#3B82F6", b2bGlow: "rgba(37,99,235,0.08)", b2bBorder: "rgba(37,99,235,0.2)",
+  b2c: "#7C3AED", b2cLight: "#8B5CF6", b2cGlow: "rgba(124,58,237,0.08)", b2cBorder: "rgba(124,58,237,0.2)",
+  comp: "#059669", compLight: "#10B981", compGlow: "rgba(5,150,105,0.08)", compBorder: "rgba(5,150,105,0.2)",
+  camp: "#D97706", campLight: "#F59E0B", campGlow: "rgba(217,119,6,0.08)", campBorder: "rgba(217,119,6,0.2)",
+  gold: "#F59E0B", goldLight: "#FCD34D",
   hot: "#EF4444", warm: "#F59E0B", cold: "#10B981",
-  comp: "#059669", compLight: "#10B981", compGlow: "rgba(5,150,105,0.15)", compBorder: "rgba(5,150,105,0.3)",
-  camp: "#D97706", campLight: "#F59E0B", campGlow: "rgba(217,119,6,0.15)", campBorder: "rgba(217,119,6,0.3)",
-  white: "#F0F6FC", muted: "rgba(240,246,252,0.5)", dim: "rgba(240,246,252,0.25)",
+  white: "#0F172A", muted: "#64748B", dim: "#94A3B8",
+  cardShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+  cardShadowHover: "0 4px 16px rgba(37,99,235,0.12)",
 };
 
 const PLANS = {
@@ -114,14 +117,18 @@ function exportToCSV(data, filename = "pitchmind-leads.csv") {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#080B0F;color:#F0F6FC;font-family:'Inter',sans-serif}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
-input::placeholder,textarea::placeholder{color:rgba(240,246,252,0.2)}
-input:focus,textarea:focus{outline:none}a{text-decoration:none}
+body{background:#F1F5F9;color:#0F172A;font-family:'Inter',sans-serif}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#F8FAFC}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#94A3B8}
+input::placeholder,textarea::placeholder{color:#94A3B8}
+input:focus,textarea:focus{outline:none}
+a{text-decoration:none}
 `;
 
 function LoadingDots({ color = C.b2bLight }) {
@@ -182,6 +189,8 @@ function PitchMindApp() {
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState("profile");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activePage, setActivePage] = useState("dashboard");
   const [b2cMode, setB2cMode] = useState("csv");
   const [reviewQuery, setReviewQuery] = useState({ business: "", location: "" });
   const [reviewLeads, setReviewLeads] = useState([]);
@@ -321,12 +330,6 @@ function PitchMindApp() {
     if (user) await updateDoc(doc(db, "users", user.uid), { brandSettings: settings });
   };
 
-  // ── PLAN FEATURE HELPERS ──
-  const userPlan = PLANS[userData?.plan || "starter"] || PLANS.starter;
-  const canUseReviews = userPlan.b2cReviews;
-  const canUseApollo = userPlan.b2cApollo;
-  const canUseSocial = userPlan.b2cSocial;
-  const canUseHiggsfield = userPlan.higgsfield;
 
   // ── GOOGLE REVIEWS LEAD FINDER ──
   const findReviewLeads = async () => {
@@ -872,773 +875,730 @@ Return ONLY raw JSON:
 
   // ── DASHBOARD ──
   if (screen !== "dashboard") return null;
-  if (!userData) return <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter,sans-serif" }}><style>{CSS}</style><LoadingDots /></div>;
+  if (!userData) return <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><style>{CSS}</style><LoadingDots color={C.b2b} /></div>;
 
   const safeMode = mode || "b2b";
-  const accentColor = safeMode === "b2b" ? C.b2bLight : C.b2cLight;
-  const accentGlow = safeMode === "b2b" ? C.b2bGlow : C.b2cGlow;
-  const accentBorder = safeMode === "b2b" ? C.b2bBorder : C.b2cBorder;
+  const userPlan = PLANS[userData?.plan || "starter"] || PLANS.starter;
+  const plan = userPlan;
+  const sessionsLeft = Math.floor(userData.credits / CREDITS_PER_SESSION);
+  const creditPct = Math.round((userData.credits / userData.maxCredits) * 100);
   const hotCount = savedLeads.filter(l => l.score >= 80).length;
   const closedCount = savedLeads.filter(l => l.status === "closed").length;
   const pipelineCount = savedLeads.filter(l => ["contacted", "inprogress"].includes(l.status)).length;
-  const sessionsLeft = Math.floor(userData.credits / CREDITS_PER_SESSION);
-  const creditPct = Math.round((userData.credits / userData.maxCredits) * 100);
-  const plan = PLANS[userData.plan] || PLANS.starter;
+  const canUseReviews = userPlan.b2cReviews;
+  const canUseApollo = userPlan.b2cApollo;
+  const canUseSocial = userPlan.b2cSocial;
 
-  return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "Inter,sans-serif", color: C.white }}>
-      <style>{CSS}</style>
+  const navGroups = [
+    { label: "MAIN", items: [{ key: "dashboard", icon: "🏠", label: "Dashboard" }, { key: "b2b", icon: "🏢", label: "B2B Leads" }, { key: "b2c", icon: "👥", label: "B2C Leads" }] },
+    { label: "INTELLIGENCE", items: [{ key: "competitors", icon: "🕵️", label: "Competitor Radar" }, { key: "campaigns", icon: "📣", label: "Campaign Builder" }, { key: "reports", icon: "📋", label: "My Reports" }] },
+    { label: "CRM", items: [{ key: "leads", icon: "💾", label: "My Leads" }, { key: "pipeline", icon: "📊", label: "Pipeline" }] },
+    { label: "ACCOUNT", items: [{ key: "settings", icon: "⚙️", label: "Settings" }, { key: "billing", icon: "💳", label: "Plan & Billing" }] },
+  ];
 
-      {/* HEADER */}
-      <div style={{ padding: "0 28px", height: "58px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(8,11,15,0.96)", borderBottom: `1px solid ${C.border}`, backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 100, boxShadow: `0 1px 0 ${accentColor}30` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div onClick={() => setScreen("dashboard")} style={{ fontSize: "15px", fontWeight: "900", letterSpacing: "3px", background: `linear-gradient(135deg, ${C.b2bLight}, ${C.b2cLight})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", cursor: "pointer" }}>
-            {"PITCHMIND"}
+  const PageWrapper = ({ children, title, subtitle, action }) => (
+    <div style={{ padding: "28px 32px", maxWidth: "1200px", animation: "fadeUp 0.2s ease" }}>
+      {(title || action) && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+          <div>
+            {title && <h1 style={{ fontSize: "22px", fontWeight: "800", color: C.white, marginBottom: "4px", letterSpacing: "-0.3px" }}>{title}</h1>}
+            {subtitle && <p style={{ fontSize: "13px", color: C.muted }}>{subtitle}</p>}
           </div>
-          <div style={{ padding: "3px 10px", background: safeMode === "b2b" ? C.b2bGlow : C.b2cGlow, border: `1px solid ${accentBorder}`, borderRadius: "20px", fontSize: "10px", fontWeight: "800", color: accentColor, letterSpacing: "1px", textTransform: "uppercase" }}>
-            {safeMode === "b2b" ? "🏢 B2B" : "👥 B2C"}
-          </div>
+          {action && action}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* Sessions indicator */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "5px 12px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "10px" }}>
-            <div style={{ width: "50px", height: "3px", background: C.bg3, borderRadius: "3px", overflow: "hidden" }}>
-              <div style={{ width: `${creditPct}%`, height: "100%", background: `linear-gradient(90deg, ${accentColor}, ${C.b2cLight})`, borderRadius: "3px" }} />
-            </div>
-            <span style={{ fontSize: "12px", fontWeight: "700", color: accentColor }}>{sessionsLeft}</span>
-            <span style={{ fontSize: "11px", color: C.dim }}>sessions left</span>
-          </div>
-          <div style={{ padding: "4px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", fontSize: "10px", fontWeight: "700", color: C.gold, letterSpacing: "1px", textTransform: "uppercase" }}>{plan.name}</div>
-          <button onClick={() => { const nm = safeMode === "b2b" ? "b2c" : "b2b"; setMode(nm); updateDoc(doc(db, "users", user.uid), { mode: nm }); }}
-            style={{ padding: "5px 10px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
-            {"Switch to "}{safeMode === "b2b" ? "B2C" : "B2B"}
-          </button>
-          <button onClick={() => setShowSettings(s => !s)}
-            style={{ padding: "5px 10px", background: showSettings ? "rgba(255,255,255,0.06)" : C.bg2, border: `1px solid ${showSettings ? "rgba(255,255,255,0.12)" : C.border}`, borderRadius: "8px", color: showSettings ? C.white : C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
-            {"⚙️ Settings"}
-          </button>
-          <button onClick={doLogout} style={{ padding: "5px 10px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.dim, cursor: "pointer", fontSize: "11px" }}>Logout</button>
-        </div>
+      )}
+      {children}
+    </div>
+  );
+
+  const StatCard = ({ label, value, color, sub, icon }) => (
+    <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", boxShadow: C.cardShadow }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+        <div style={{ fontSize: "11px", fontWeight: "600", color: C.muted, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+        <span style={{ fontSize: "18px" }}>{icon}</span>
       </div>
+      <div style={{ fontSize: "36px", fontWeight: "900", color: color || C.b2b, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
+      <div style={{ fontSize: "12px", color: C.dim }}>{sub}</div>
+    </div>
+  );
 
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "28px 28px" }}>
+  const renderPage = () => {
 
-        {/* WHITE LABEL SETTINGS PANEL */}
-
-        {/* LOW CREDITS WARNING */}
-        {userData.credits < CREDITS_PER_SESSION && userData.credits > 0 && (
-          <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "12px", padding: "12px 18px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#FCD34D" }}>
-            {"⚠️ Not enough credits for a full session ("}{userData.credits}{" remaining, need "}{CREDITS_PER_SESSION}{")"}
-            <button onClick={() => setScreen("plan")} style={{ padding: "5px 12px", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "8px", color: "#FCD34D", cursor: "pointer", fontSize: "11px", fontWeight: "700" }}>Upgrade →</button>
+    if (activePage === "dashboard") return (
+      <PageWrapper title="Dashboard" subtitle={`Welcome back! You have ${sessionsLeft} sessions remaining.`}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px", marginBottom: "24px" }}>
+          <StatCard label="Total Leads" value={savedLeads.length} icon="🎯" sub="all time saved" color={C.b2b} />
+          <StatCard label="Hot Leads" value={hotCount} icon="🔥" sub="score 80+" color="#EF4444" />
+          <StatCard label="In Pipeline" value={pipelineCount} icon="📊" sub="active contacts" color={C.camp} />
+          <StatCard label="Closed Won" value={closedCount} icon="✅" sub="converted" color={C.comp} />
+        </div>
+        <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px", marginBottom: "24px", boxShadow: C.cardShadow }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: "700", color: C.white, marginBottom: "2px" }}>{"Session Credits"}</div>
+              <div style={{ fontSize: "12px", color: C.muted }}>{userData.credits}{" of "}{userData.maxCredits}{" remaining · "}{sessionsLeft}{" sessions left"}</div>
+            </div>
+            <div style={{ padding: "4px 12px", borderRadius: "20px", background: `${plan.color}12`, color: plan.color, border: `1px solid ${plan.color}25`, fontSize: "11px", fontWeight: "700" }}>{plan.name}{" Plan"}</div>
+          </div>
+          <div style={{ width: "100%", height: "8px", background: C.bg3, borderRadius: "4px", overflow: "hidden" }}>
+            <div style={{ width: `${creditPct}%`, height: "100%", background: `linear-gradient(90deg, ${C.b2b}, ${C.b2bLight})`, borderRadius: "4px", transition: "width 0.5s" }} />
+          </div>
+        </div>
+        <div style={{ marginBottom: "24px" }}>
+          <div style={{ fontSize: "12px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "14px" }}>{"Quick Actions"}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>
+            {[
+              { icon: "🏢", label: "Scan B2B Leads", desc: "Find businesses weak in what you offer", page: "b2b", color: C.b2b },
+              { icon: "👥", label: "Scan B2C Leads", desc: "Upload ad data or find reviewer leads", page: "b2c", color: C.b2cLight },
+              { icon: "🕵️", label: "Analyze Competitors", desc: "See who you are up against", page: "competitors", color: C.comp },
+            ].map((a, i) => (
+              <button key={i} onClick={() => setActivePage(a.page)}
+                style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px", textAlign: "left", cursor: "pointer", boxShadow: C.cardShadow, transition: "all 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = a.color; e.currentTarget.style.boxShadow = `0 4px 16px ${a.color}18`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = C.cardShadow; }}>
+                <div style={{ fontSize: "24px", marginBottom: "10px" }}>{a.icon}</div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: C.white, marginBottom: "4px" }}>{a.label}</div>
+                <div style={{ fontSize: "12px", color: C.muted }}>{a.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+        {savedLeads.length > 0 && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <div style={{ fontSize: "12px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.5px" }}>{"Recent Leads"}</div>
+              <button onClick={() => setActivePage("leads")} style={{ fontSize: "12px", color: C.b2b, background: "none", border: "none", cursor: "pointer", fontWeight: "600" }}>{"View all"}</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: "12px" }}>
+              {savedLeads.slice(0,3).map((lead,i) => { const sc = scoreColor(lead.score); return <SavedLeadCard key={i} lead={lead} sc={sc} accentColor={lead.mode==="b2c"?C.b2cLight:C.b2b} websiteScore={websiteScores[lead.name]} onReport={()=>{setSelectedLead(lead);loadReport(lead);}} onStatus={s=>updateStatus(lead.id,s)} onNotes={n=>updateNotes(lead.id,n)} onDelete={()=>deleteLead(lead.id)} onScoreWebsite={()=>scoreWebsite(lead)} onCampaign={()=>{setActivePage("campaigns");buildCampaign(lead);}} />; })}
+            </div>
           </div>
         )}
-        {userData.credits === 0 && (
-          <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "12px 18px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#F87171" }}>
-            {"❌ No credits remaining"}
-            <button onClick={() => setScreen("plan")} style={{ padding: "5px 12px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", color: "#F87171", cursor: "pointer", fontSize: "11px", fontWeight: "700" }}>Upgrade Now →</button>
+      </PageWrapper>
+    );
+
+    if (activePage === "b2b") return (
+      <PageWrapper title="B2B Lead Scanner" subtitle="Find businesses weak in what you offer">
+        <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "22px", marginBottom: "20px", boxShadow: C.cardShadow }}>
+          <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+            {[{label:"Target Industry",key:"targetIndustry",ph:"Restaurants, Clinics, Gyms..."},{label:"Location",key:"location",ph:"Beirut, Dubai, Kuwait..."}].map(f => (
+              <div key={f.key} style={{ flex: 1, minWidth: "180px" }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: C.muted, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.label}</label>
+                <input value={profile[f.key]||""} onChange={e=>setProfile(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph}
+                  style={{ width: "100%", padding: "10px 14px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
+              </div>
+            ))}
+            <button onClick={scanB2B} disabled={scanning||userData.credits<CREDITS_PER_SESSION}
+              style={{ padding: "11px 24px", background: scanning||userData.credits<CREDITS_PER_SESSION?C.bg3:C.b2b, border: "none", borderRadius: "8px", color: scanning||userData.credits<CREDITS_PER_SESSION?C.dim:"#fff", fontSize: "13px", fontWeight: "700", cursor: scanning||userData.credits<CREDITS_PER_SESSION?"not-allowed":"pointer", whiteSpace: "nowrap" }}>
+              {scanning?"Scanning...":"Find Leads"}
+            </button>
+          </div>
+          {scanning && <div style={{ marginTop: "14px" }}><LoadingDots color={C.b2b} /></div>}
+          {scanErr && <div style={{ color: "#EF4444", fontSize: "12px", marginTop: "10px", padding: "10px 14px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "8px" }}>{scanErr}</div>}
+          {savedLeads.length > 0 && <button onClick={()=>exportToCSV(savedLeads)} style={{ marginTop: "12px", padding: "7px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "7px", color: C.muted, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>{"Export CSV"}</button>}
+        </div>
+        {leads.length > 0 && !scanning && (
+          <>
+            <div style={{ fontSize: "12px", fontWeight: "600", color: C.muted, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "14px" }}>{leads.length}{" leads found"}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: "14px" }}>
+              {[...leads].sort((a,b)=>(b.score||0)-(a.score||0)).map((lead,i) => { const sc=scoreColor(lead.score); const saved=savedLeads.find(s=>s.name===lead.name); return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode="b2b" accentColor={C.b2b} accentGlow={C.b2bGlow} websiteScore={websiteScores[lead.name]} onReport={()=>{setSelectedLead(saved||lead);loadReport(saved||lead);}} onCampaign={()=>{setActivePage("campaigns");buildCampaign(lead);}} />; })}
+            </div>
+          </>
+        )}
+        {leads.length===0&&!scanning && (
+          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "48px", textAlign: "center", boxShadow: C.cardShadow }}>
+            <div style={{ fontSize: "48px", marginBottom: "14px" }}>{"🏢"}</div>
+            <div style={{ fontSize: "18px", fontWeight: "800", color: C.white, marginBottom: "8px" }}>{"Ready to find hot leads?"}</div>
+            <div style={{ fontSize: "13px", color: C.muted }}>{"Enter your target industry and location above"}</div>
           </div>
         )}
+      </PageWrapper>
+    );
 
-        {/* STATS */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "24px" }}>
+    if (activePage === "b2c") return (
+      <PageWrapper title="B2C Lead Intelligence" subtitle="Find real people interested in your business">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px", marginBottom: "20px" }}>
           {[
-            { label: "SAVED LEADS", value: savedLeads.length, color: accentColor, sub: "all time" },
-            { label: "HOT LEADS 🔥", value: hotCount, color: C.hot, sub: "score 80+" },
-            { label: "IN PIPELINE", value: pipelineCount, color: C.warm, sub: "contacted + in progress" },
-            { label: "CLOSED WON", value: closedCount, color: C.cold, sub: "converted" },
-          ].map(({ label, value, color, sub }) => (
-            <div key={label} style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "18px 20px", transition: "border 0.2s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = `${color}40`}
-              onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-              <div style={{ fontSize: "10px", fontWeight: "700", color: C.dim, letterSpacing: "1.5px", marginBottom: "8px", textTransform: "uppercase" }}>{label}</div>
-              <div style={{ fontSize: "34px", fontWeight: "900", color, lineHeight: 1, marginBottom: "4px" }}>{value}</div>
-              <div style={{ fontSize: "11px", color: C.dim }}>{sub}</div>
+            {key:"csv",icon:"📤",label:"Ad Data Upload",desc:"Meta / TikTok / Google CSV",color:C.b2cLight,locked:false},
+            {key:"reviews",icon:"⭐",label:"Google Reviews",desc:"Real people · Real intent",color:"#4285F4",locked:!canUseReviews},
+            {key:"apollo",icon:"🚀",label:"Email Enrichment",desc:"Emails · LinkedIn · Phones",color:"#7C3AED",locked:!canUseApollo},
+            {key:"social",icon:"👥",label:"Social Finder",desc:"Instagram · Facebook",color:"#EC4899",locked:!canUseSocial},
+          ].map(m => (
+            <div key={m.key} onClick={()=>!m.locked&&setB2cMode(m.key)}
+              style={{ background:b2cMode===m.key?`${m.color}06`:C.bg2, border:`2px solid ${b2cMode===m.key?m.color:C.border}`, borderRadius:"12px", padding:"16px 12px", cursor:m.locked?"default":"pointer", opacity:m.locked?0.5:1, transition:"all 0.2s", position:"relative", textAlign:"center", boxShadow:C.cardShadow }}>
+              {m.locked&&<div style={{ position:"absolute", top:"8px", right:"8px", fontSize:"9px", fontWeight:"700", padding:"2px 6px", background:"#FEF3C7", borderRadius:"4px", color:"#92400E" }}>{"Upgrade"}</div>}
+              <div style={{ fontSize:"24px", marginBottom:"8px" }}>{m.icon}</div>
+              <div style={{ fontSize:"12px", fontWeight:"700", color:b2cMode===m.key?m.color:C.white, marginBottom:"3px" }}>{m.label}</div>
+              <div style={{ fontSize:"10px", color:C.muted }}>{m.desc}</div>
+              {!m.locked&&b2cMode===m.key&&<div style={{ marginTop:"6px", fontSize:"10px", color:m.color, fontWeight:"700" }}>{"Active"}</div>}
             </div>
           ))}
         </div>
-
-        {/* SETTINGS PANEL */}
-        {showSettings && (
-          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px", marginBottom: "20px", animation: "fadeUp 0.2s ease" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-              <div style={{ fontSize: "12px", fontWeight: "800", color: C.white, letterSpacing: "2px", textTransform: "uppercase" }}>{"⚙️ SETTINGS"}</div>
-              <button onClick={() => setShowSettings(false)} style={{ background: "transparent", border: "none", color: C.dim, cursor: "pointer", fontSize: "18px", lineHeight: 1 }}>{"✕"}</button>
+        {b2cMode==="csv"&&(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"24px", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"14px", fontWeight:"700", color:C.white, marginBottom:"4px" }}>{"Upload Ad Performance Data"}</div>
+            <div style={{ fontSize:"13px", color:C.muted, marginBottom:"18px" }}>{"AI scores every row — Meta, TikTok, Google, or any CSV format"}</div>
+            <div onClick={()=>fileRef.current?.click()} style={{ border:`2px dashed ${csvName?C.b2cBorder:C.border}`, borderRadius:"10px", padding:"32px", textAlign:"center", cursor:"pointer", background:csvName?"#FAF5FF":C.bg3, transition:"all 0.2s", marginBottom:"16px" }}>
+              <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display:"none" }} />
+              <div style={{ fontSize:"32px", marginBottom:"10px" }}>{csvName?"✅":"📂"}</div>
+              <div style={{ fontSize:"14px", fontWeight:"700", color:csvName?C.b2cLight:C.white, marginBottom:"4px" }}>{csvName||"Click to upload CSV"}</div>
+              <div style={{ fontSize:"12px", color:C.muted }}>{csvData.length>0?`${csvData.length} rows ready`:"Supports all ad platform exports"}</div>
             </div>
-
-            {/* Settings nav */}
-            <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: C.bg3, borderRadius: "10px", padding: "4px" }}>
-              {[{ key: "profile", label: "👤 Profile" }, { key: "mode", label: "🔄 Mode" }, { key: "plan", label: "📋 Plan" }].map(t => (
-                <button key={t.key} onClick={() => setSettingsTab(t.key)}
-                  style={{ flex: 1, padding: "8px", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "700", background: settingsTab === t.key ? C.bg2 : "transparent", color: settingsTab === t.key ? C.white : C.muted, transition: "all 0.2s" }}>
-                  {t.label}
+            <div style={{ display:"flex", gap:"8px", marginBottom:"16px", flexWrap:"wrap" }}>
+              {["Meta Ads","TikTok Ads","Google Ads","Other"].map(p=>(
+                <button key={p} onClick={()=>setProfile(pr=>({...pr,b2cPlatform:p}))}
+                  style={{ padding:"7px 16px", borderRadius:"20px", border:`1px solid ${profile.b2cPlatform===p?C.b2cLight:C.border}`, background:profile.b2cPlatform===p?C.b2cGlow:"transparent", color:profile.b2cPlatform===p?C.b2cLight:C.muted, cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>
+                  {p}
                 </button>
               ))}
             </div>
-
-            {/* Profile Tab */}
-            {settingsTab === "profile" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                {[
-                  { lbl: "Business Name", key: "businessName", ph: "Peach Agency" },
-                  { lbl: "Business Email", key: "businessEmail", ph: "hello@agency.com" },
-                  { lbl: "WhatsApp Number", key: "whatsappNumber", ph: "+961 XX XXX XXX" },
-                  { lbl: "Business Phone", key: "businessPhone", ph: "+961 XX XXX XXX" },
-                  { lbl: "Target Industry", key: "targetIndustry", ph: "Restaurants, Clinics..." },
-                  { lbl: "Location", key: "location", ph: "Beirut, Dubai..." },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.lbl}</label>
-                    <input value={profile[f.key] || ""} onChange={e => setProfile(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
-                      style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px" }} />
-                  </div>
-                ))}
-                <div style={{ gridColumn: "1/-1" }}>
-                  <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{"What You Offer"}</label>
-                  <textarea value={profile.whatYouDo || ""} onChange={e => setProfile(p => ({ ...p, whatYouDo: e.target.value }))} placeholder="Social media, web design, ads..."
-                    style={{ width: "100%", padding: "9px 11px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "7px", color: C.white, fontSize: "12px", minHeight: "60px", resize: "vertical", fontFamily: "Inter,sans-serif" }} />
-                </div>
-                <div style={{ gridColumn: "1/-1" }}>
-                  <button onClick={async () => { await updateDoc(doc(db, "users", user.uid), { profile }); setShowSettings(false); }}
-                    style={{ padding: "9px 22px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                    {"Save Changes ✓"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Mode Tab */}
-            {settingsTab === "mode" && (
-              <div>
-                <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"Choose which lead modes are active for your account. You can use both or focus on one."}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
-                  {[
-                    { m: "b2b", icon: "🏢", label: "B2B Mode", desc: "Find businesses weak in what you offer. Best for agencies and service providers.", color: C.b2bLight, glow: C.b2bGlow, border: C.b2bBorder },
-                    { m: "b2c", icon: "👥", label: "B2C Mode", desc: "Find individual customers interested in your business. Best for gyms, salons, restaurants.", color: C.b2cLight, glow: C.b2cGlow, border: C.b2cBorder },
-                  ].map(opt => {
-                    const isActive = mode === opt.m || mode === "both";
-                    return (
-                      <div key={opt.m} onClick={() => { const nm = mode === "both" ? (opt.m === "b2b" ? "b2c" : "b2b") : (mode === opt.m ? "both" : opt.m); setMode(nm); updateDoc(doc(db, "users", user.uid), { mode: nm }); }}
-                        style={{ background: isActive ? opt.glow : C.bg3, border: `2px solid ${isActive ? opt.color : C.border}`, borderRadius: "12px", padding: "18px", cursor: "pointer", transition: "all 0.2s" }}>
-                        <div style={{ fontSize: "28px", marginBottom: "8px" }}>{opt.icon}</div>
-                        <div style={{ fontSize: "14px", fontWeight: "800", color: isActive ? opt.color : C.white, marginBottom: "6px" }}>{opt.label}</div>
-                        <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.5", marginBottom: "10px" }}>{opt.desc}</div>
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 10px", borderRadius: "20px", background: isActive ? `${opt.color}20` : "rgba(255,255,255,0.04)", border: `1px solid ${isActive ? opt.color : C.border}` }}>
-                          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: isActive ? opt.color : C.dim }} />
-                          <span style={{ fontSize: "11px", fontWeight: "700", color: isActive ? opt.color : C.dim }}>{isActive ? "Active" : "Inactive"}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px", fontSize: "12px", color: C.muted, lineHeight: "1.6" }}>
-                  {"💡 Current mode: "}
-                  <strong style={{ color: C.white }}>{mode === "both" ? "B2B + B2C (both active)" : mode === "b2b" ? "B2B only" : "B2C only"}</strong>
-                  {" — Click a card above to toggle. Both can be active at the same time."}
-                </div>
-              </div>
-            )}
-
-            {/* Plan Tab */}
-            {settingsTab === "plan" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
-                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>{"Your Plan"}</div>
-                  <div style={{ fontSize: "26px", fontWeight: "900", color: userPlan.color, marginBottom: "2px" }}>{userPlan.name}</div>
-                  <div style={{ fontSize: "14px", color: C.muted, marginBottom: "14px" }}>{"$"}{userPlan.price}{"/month"}</div>
-                  <div style={{ display: "flex", gap: "20px", marginBottom: "14px" }}>
-                    <div>
-                      <div style={{ fontSize: "30px", fontWeight: "900", color: userPlan.color }}>{userData.credits}</div>
-                      <div style={{ fontSize: "10px", color: C.dim }}>{"credits"}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "30px", fontWeight: "900", color: userPlan.color }}>{Math.floor(userData.credits / CREDITS_PER_SESSION)}</div>
-                      <div style={{ fontSize: "10px", color: C.dim }}>{"sessions left"}</div>
-                    </div>
-                  </div>
-                  <button onClick={() => { setShowSettings(false); setScreen("plan"); }}
-                    style={{ width: "100%", padding: "10px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "8px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                    {"Upgrade Plan →"}
-                  </button>
-                </div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "18px" }}>
-                  <div style={{ fontSize: "11px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>{"Features Included"}</div>
-                  {[
-                    { label: "B2B Scanner", enabled: true },
-                    { label: "B2C CSV Upload", enabled: true },
-                    { label: "Competitor Radar", enabled: true },
-                    { label: "Campaign Builder", enabled: true },
-                    { label: "B2C Google Reviews", enabled: userPlan.b2cReviews },
-                    { label: "B2C Apollo Enrichment", enabled: userPlan.b2cApollo },
-                    { label: "B2C Social Finder", enabled: userPlan.b2cSocial },
-                    { label: "Higgsfield Creatives", enabled: userPlan.higgsfield },
-                    { label: "Priority Support", enabled: userPlan.prioritySupport },
-                  ].map((f, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "7px" }}>
-                      <span style={{ fontSize: "12px", color: f.enabled ? C.white : C.dim }}>{f.label}</span>
-                      <span style={{ fontSize: "11px", fontWeight: "700", color: f.enabled ? "#34D399" : "rgba(255,255,255,0.15)" }}>{f.enabled ? "✓" : "—"}</span>
-                    </div>
-                  ))}
+            <button onClick={processCSV} disabled={csvProcessing||!csvData.length||userData.credits<CREDITS_PER_SESSION}
+              style={{ width:"100%", padding:"12px", background:!csvData.length||csvProcessing?C.bg3:C.b2cLight, border:"none", borderRadius:"9px", color:!csvData.length||csvProcessing?C.dim:"#fff", fontSize:"14px", fontWeight:"700", cursor:!csvData.length||csvProcessing?"not-allowed":"pointer" }}>
+              {csvProcessing?"Analyzing...":csvData.length>0?`Analyze ${csvData.length} Rows`:"Upload CSV to continue"}
+            </button>
+            {csvProgress&&<div style={{ marginTop:"10px", fontSize:"12px", color:C.b2cLight, fontWeight:"600" }}>{csvProgress}</div>}
+            {csvErr&&<div style={{ color:"#EF4444", fontSize:"12px", marginTop:"10px", padding:"10px 14px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"8px" }}>{csvErr}</div>}
+            {leads.length>0&&!csvProcessing&&(
+              <div style={{ marginTop:"20px" }}>
+                <div style={{ fontSize:"12px", fontWeight:"600", color:C.muted, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"14px" }}>{leads.length}{" leads analyzed"}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"14px" }}>
+                  {[...leads].sort((a,b)=>(b.score||0)-(a.score||0)).map((lead,i)=>{const sc=scoreColor(lead.score);const saved=savedLeads.find(s=>s.name===lead.name);return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode="b2c" accentColor={C.b2cLight} accentGlow={C.b2cGlow} websiteScore={null} onReport={()=>{setSelectedLead(saved||lead);loadReport(saved||lead);}} onCampaign={()=>{setActivePage("campaigns");buildCampaign(lead);}} />;}) }
                 </div>
               </div>
             )}
           </div>
         )}
+        {b2cMode==="reviews"&&canUseReviews&&(
+          <div style={{ background:C.bg2, border:"1px solid #BFDBFE", borderRadius:"12px", padding:"24px", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"14px", fontWeight:"700", color:C.white, marginBottom:"4px" }}>{"Google Reviews Lead Finder"}</div>
+            <div style={{ fontSize:"13px", color:C.muted, marginBottom:"14px" }}>{"Find unhappy reviewers at your competitors — ready to switch"}</div>
+            <div style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:"8px", padding:"10px 14px", marginBottom:"16px", fontSize:"12px", color:"#1D4ED8" }}>{"1-3 star reviewers at competitor businesses = your hottest prospects"}</div>
+            <div style={{ display:"flex", gap:"12px", marginBottom:"16px", flexWrap:"wrap" }}>
+              {[{label:"Business Type",key:"business",ph:"gym, salon, restaurant..."},{label:"Location",key:"location",ph:"Dubai, Beirut, Kuwait..."}].map(f=>(
+                <div key={f.key} style={{ flex:1, minWidth:"160px" }}>
+                  <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:C.muted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{f.label}</label>
+                  <input value={reviewQuery[f.key]} onChange={e=>setReviewQuery(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph}
+                    style={{ width:"100%", padding:"10px 14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.white, fontSize:"13px" }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={findReviewLeads} disabled={reviewLoading||!reviewQuery.business||!reviewQuery.location||userData.credits<CREDITS_PER_SESSION}
+              style={{ width:"100%", padding:"12px", background:reviewLoading||!reviewQuery.business||!reviewQuery.location?C.bg3:"#2563EB", border:"none", borderRadius:"9px", color:reviewLoading||!reviewQuery.business||!reviewQuery.location?C.dim:"#fff", fontSize:"14px", fontWeight:"700", cursor:reviewLoading||!reviewQuery.business||!reviewQuery.location?"not-allowed":"pointer" }}>
+              {reviewLoading?"Searching...":"Find Reviewer Leads"}
+            </button>
+            {reviewLoading&&<div style={{ marginTop:"12px" }}><LoadingDots color="#4285F4" /></div>}
+            {reviewErr&&<div style={{ color:"#EF4444", fontSize:"12px", marginTop:"10px", padding:"10px", background:"#FEF2F2", borderRadius:"8px" }}>{reviewErr}</div>}
+            {reviewLeads.length>0&&!reviewLoading&&(
+              <div style={{ marginTop:"20px" }}>
+                <div style={{ fontSize:"12px", fontWeight:"600", color:C.muted, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"14px" }}>{reviewLeads.length}{" reviewer leads"}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:"12px" }}>
+                  {reviewLeads.map((lead,i)=>{const sc=scoreColor(lead.score);const saved=savedLeads.find(s=>s.name===lead.name);return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode="b2c" accentColor="#4285F4" accentGlow="rgba(66,133,244,0.08)" websiteScore={null} onReport={()=>{setSelectedLead(saved||lead);loadReport(saved||lead);}} onCampaign={()=>{setActivePage("campaigns");buildCampaign(lead);}} />;}) }
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {(b2cMode==="apollo"||b2cMode==="social")&&(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"48px", textAlign:"center", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"48px", marginBottom:"14px" }}>{b2cMode==="apollo"?"🚀":"👥"}</div>
+            <div style={{ fontSize:"18px", fontWeight:"800", color:C.white, marginBottom:"8px" }}>{"Coming Soon"}</div>
+            <div style={{ fontSize:"13px", color:C.muted, maxWidth:"360px", margin:"0 auto" }}>{b2cMode==="apollo"?"Apollo.io email enrichment — verified emails, phones and LinkedIn for all your saved leads.":"Instagram followers and Facebook group extraction — coming for Pro users."}</div>
+          </div>
+        )}
+      </PageWrapper>
+    );
 
+    if (activePage === "competitors") return (
+      <PageWrapper title="Competitor Radar" subtitle="Analyze top competitors and find their weaknesses">
+        <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"22px", marginBottom:"20px", boxShadow:C.cardShadow }}>
+          <div style={{ display:"flex", gap:"12px", alignItems:"flex-end", flexWrap:"wrap" }}>
+            {[{label:"Industry",key:"industry",ph:"Marketing agencies, gyms..."},{label:"Location",key:"location",ph:"Dubai, Beirut, Kuwait..."}].map(f=>(
+              <div key={f.key} style={{ flex:1, minWidth:"180px" }}>
+                <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:C.muted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{f.label}</label>
+                <input value={compQuery[f.key]} onChange={e=>setCompQuery(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph}
+                  style={{ width:"100%", padding:"10px 14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.white, fontSize:"13px" }} />
+              </div>
+            ))}
+            <button onClick={scanCompetitors} disabled={compScanning||userData.credits<CREDITS_PER_SESSION}
+              style={{ padding:"11px 24px", background:compScanning?C.bg3:C.comp, border:"none", borderRadius:"8px", color:compScanning?C.dim:"#fff", fontSize:"13px", fontWeight:"700", cursor:compScanning?"not-allowed":"pointer", whiteSpace:"nowrap" }}>
+              {compScanning?"Analyzing...":"Analyze Competitors"}
+            </button>
+          </div>
+          {compScanning&&<div style={{ marginTop:"12px" }}><LoadingDots color={C.compLight} /></div>}
+          {compErr&&<div style={{ color:"#EF4444", fontSize:"12px", marginTop:"10px", padding:"10px 14px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"8px" }}>{compErr}</div>}
+        </div>
+        {competitors.length>0?(
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"14px" }}>
+            {competitors.map((comp,i)=>{
+              const tc=comp.threatLevel==="High"?"#EF4444":comp.threatLevel==="Medium"?"#F59E0B":"#10B981";
+              return (
+                <div key={i} style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"20px", boxShadow:C.cardShadow, display:"flex", flexDirection:"column" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
+                    <div><div style={{ fontSize:"15px", fontWeight:"800", color:C.white, marginBottom:"2px" }}>{comp.name}</div><div style={{ fontSize:"11px", color:C.comp, fontWeight:"600" }}>{comp.marketPosition}</div></div>
+                    <div style={{ textAlign:"center" }}><div style={{ fontSize:"9px", color:C.muted, fontWeight:"700", marginBottom:"1px" }}>{"STRENGTH"}</div><div style={{ fontSize:"22px", fontWeight:"900", color:C.comp }}>{comp.strength}</div></div>
+                  </div>
+                  <span style={{ fontSize:"10px", fontWeight:"700", padding:"3px 10px", borderRadius:"20px", background:`${tc}10`, color:tc, border:`1px solid ${tc}25`, display:"inline-block", marginBottom:"10px", width:"fit-content" }}>{comp.threatLevel}{" Threat"}</span>
+                  {comp.website&&comp.website!=="N/A"&&<a href={comp.website.startsWith("http")?comp.website:`https://${comp.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:"11px", color:C.b2b, marginBottom:"8px", display:"block" }}>{comp.website}{" ↗"}</a>}
+                  <div style={{ marginBottom:"8px" }}>{(comp.strongPoints||[]).slice(0,2).map((s,j)=><div key={j} style={{ fontSize:"12px", color:C.comp, marginBottom:"2px" }}>{"+ "}{s}</div>)}</div>
+                  <div style={{ marginBottom:"10px" }}>{(comp.weakPoints||[]).slice(0,2).map((w,j)=><div key={j} style={{ fontSize:"12px", color:"#EF4444", marginBottom:"2px" }}>{"- "}{w}</div>)}</div>
+                  <div style={{ fontSize:"12px", color:C.muted, flexGrow:1, marginBottom:"12px" }}>{comp.ourAdvantage}</div>
+                  <button onClick={()=>loadCompReport(comp)} style={{ width:"100%", padding:"9px", background:C.comp, border:"none", borderRadius:"8px", color:"#fff", fontSize:"12px", fontWeight:"700", cursor:"pointer" }}>{"Deep Analysis"}</button>
+                </div>
+              );
+            })}
+          </div>
+        ):!compScanning&&(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"48px", textAlign:"center", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"48px", marginBottom:"14px" }}>{"🕵️"}</div>
+            <div style={{ fontSize:"18px", fontWeight:"800", color:C.white, marginBottom:"8px" }}>{"Know your competition"}</div>
+            <div style={{ fontSize:"13px", color:C.muted }}>{"Analyze top competitors and find their gaps"}</div>
+          </div>
+        )}
+      </PageWrapper>
+    );
 
-        {/* TABS */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "4px" }}>
-          {[
-            { key: "scan", icon: safeMode === "b2b" ? "🔍" : "📤", label: safeMode === "b2b" ? "Scan Leads" : "Upload Data", bg: `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})` },
-            { key: "saved", icon: "💾", label: `My Leads${savedLeads.length > 0 ? ` (${savedLeads.length})` : ""}`, bg: `linear-gradient(135deg, ${safeMode === "b2b" ? C.b2b : C.b2c}, ${safeMode === "b2b" ? C.b2bLight : C.b2cLight})` },
-            { key: "competitors", icon: "🕵️", label: "Competitor Radar", bg: `linear-gradient(135deg, ${C.comp}, ${C.compLight})` },
-            { key: "campaigns", icon: "📣", label: "Campaign Builder", bg: `linear-gradient(135deg, ${C.camp}, ${C.campLight})` },
-          ].map(t => (
-            <button key={t.key} onClick={() => { setActiveTab(t.key); if (t.key === "saved" && user) loadLeads(user.uid); }}
-              style={{ flex: 1, padding: "9px 4px", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "700", transition: "all 0.2s", background: activeTab === t.key ? t.bg : "transparent", color: activeTab === t.key ? "#fff" : C.muted }}>
-              {t.icon} {t.label}
+    if (activePage === "campaigns") return (
+      <PageWrapper title="Campaign Builder" subtitle="Generate complete ad campaigns from your leads">
+        {campaignLoading&&<div style={{ textAlign:"center", padding:"60px" }}><LoadingDots color={C.camp} /><div style={{ fontSize:"14px", fontWeight:"600", color:C.muted, marginTop:"14px" }}>{"Building your campaign..."}</div></div>}
+        {campaign&&!campaignLoading&&(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"28px", boxShadow:C.cardShadow }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"22px" }}>
+              <div>
+                <div style={{ fontSize:"11px", fontWeight:"700", color:C.camp, letterSpacing:"1px", textTransform:"uppercase", marginBottom:"4px" }}>{"Campaign for "}{campaign.leadName}</div>
+                <div style={{ fontSize:"22px", fontWeight:"800", color:C.white }}>{campaign.campaignName}</div>
+                <div style={{ fontSize:"13px", color:C.muted, marginTop:"4px" }}>{campaign.objective}{" · "}{campaign.timeline}{" · "}{campaign.totalBudget}</div>
+              </div>
+              <div style={{ display:"flex", gap:"8px" }}>
+                <button onClick={()=>{navigator.clipboard?.writeText([campaign.campaignName,campaign.callToAction,(campaign.hashtags||[]).join(" ")].join(" | "));}} style={{ padding:"9px 16px", background:C.camp, border:"none", borderRadius:"8px", color:"#fff", fontSize:"12px", fontWeight:"700", cursor:"pointer" }}>{"Copy"}</button>
+                <button onClick={()=>setCampaign(null)} style={{ padding:"9px 16px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:"8px", color:C.muted, fontSize:"12px", cursor:"pointer" }}>{"Clear"}</button>
+              </div>
+            </div>
+            {(campaign.platforms||[]).map((p,i)=>(
+              <div key={i} style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"10px", padding:"16px", marginBottom:"14px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
+                  <div style={{ fontSize:"14px", fontWeight:"700", color:C.white }}>{p.platform}{" — "}{p.format}</div>
+                  <div style={{ fontSize:"12px", color:C.camp, fontWeight:"700" }}>{p.budget}{"/day · "}{p.duration}</div>
+                </div>
+                {p.audience&&(
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                    <div><div style={{ fontSize:"10px", color:C.muted, textTransform:"uppercase", marginBottom:"4px" }}>{"Targeting"}</div><div style={{ fontSize:"12px", color:C.white }}>{p.audience.location}</div><div style={{ fontSize:"12px", color:C.white }}>{"Age "}{p.audience.age}</div></div>
+                    <div><div style={{ fontSize:"10px", color:C.muted, textTransform:"uppercase", marginBottom:"4px" }}>{"Interests"}</div>{(p.audience.interests||[]).map((int,j)=><div key={j} style={{ fontSize:"12px", color:C.white }}>{"- "}{int}</div>)}</div>
+                  </div>
+                )}
+              </div>
+            ))}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"14px" }}>
+              <div style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"10px", padding:"14px" }}>
+                <div style={{ fontSize:"10px", fontWeight:"700", color:C.camp, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>{"HOOK"}</div>
+                <div style={{ fontSize:"14px", fontWeight:"700", color:C.white }}>{campaign.hook}</div>
+              </div>
+              <div style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"10px", padding:"14px" }}>
+                <div style={{ fontSize:"10px", fontWeight:"700", color:C.camp, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>{"CALL TO ACTION"}</div>
+                <div style={{ fontSize:"14px", fontWeight:"700", color:C.white }}>{campaign.callToAction}</div>
+              </div>
+            </div>
+            <div style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"10px", padding:"16px", marginBottom:"14px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+                <div style={{ fontSize:"10px", fontWeight:"700", color:C.camp, textTransform:"uppercase", letterSpacing:"1px" }}>{"CAPTION"}</div>
+                <button onClick={()=>navigator.clipboard?.writeText(campaign.caption||"")} style={{ fontSize:"10px", color:C.muted, background:"transparent", border:`1px solid ${C.border}`, borderRadius:"5px", padding:"2px 8px", cursor:"pointer" }}>{"Copy"}</button>
+              </div>
+              <div style={{ fontSize:"13px", lineHeight:"1.8", color:C.white, whiteSpace:"pre-wrap" }}>{campaign.caption}</div>
+            </div>
+            <div style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"10px", padding:"14px", marginBottom:"14px" }}>
+              <div style={{ fontSize:"10px", fontWeight:"700", color:C.camp, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>{"HASHTAGS"}</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:"6px" }}>{(campaign.hashtags||[]).map((h,i)=><span key={i} style={{ padding:"4px 12px", background:`${C.camp}10`, border:`1px solid ${C.camp}25`, borderRadius:"20px", fontSize:"12px", color:C.camp, fontWeight:"600" }}>{h}</span>)}</div>
+            </div>
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:"10px", padding:"14px" }}>
+              <div style={{ fontSize:"10px", fontWeight:"700", color:C.camp, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"7px" }}>{"CREATIVE DIRECTION"}</div>
+              <div style={{ fontSize:"13px", color:C.white, lineHeight:"1.7" }}>{campaign.creativeDirection}</div>
+            </div>
+          </div>
+        )}
+        {!campaign&&!campaignLoading&&(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"48px", textAlign:"center", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"48px", marginBottom:"14px" }}>{"📣"}</div>
+            <div style={{ fontSize:"18px", fontWeight:"800", color:C.white, marginBottom:"8px" }}>{"Build a Campaign"}</div>
+            <div style={{ fontSize:"13px", color:C.muted, marginBottom:"20px" }}>{"Find a lead first, then click the campaign button on any lead card"}</div>
+            <button onClick={()=>setActivePage("b2b")} style={{ padding:"10px 24px", background:C.b2b, border:"none", borderRadius:"8px", color:"#fff", fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>{"Find a Lead"}</button>
+          </div>
+        )}
+      </PageWrapper>
+    );
+
+    if (activePage === "reports") return (
+      <PageWrapper title="My Reports" subtitle="All AI intelligence reports generated for your leads">
+        {savedLeads.filter(l=>l.report).length===0?(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"48px", textAlign:"center", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"48px", marginBottom:"14px" }}>{"📋"}</div>
+            <div style={{ fontSize:"18px", fontWeight:"800", color:C.white, marginBottom:"8px" }}>{"No reports yet"}</div>
+            <div style={{ fontSize:"13px", color:C.muted }}>{"Open any lead and click Get Report to generate an AI intelligence report"}</div>
+          </div>
+        ):(
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"14px" }}>
+            {savedLeads.filter(l=>l.report).map((lead,i)=>{
+              const sc=scoreColor(lead.score);
+              return (
+                <div key={i} style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"18px", boxShadow:C.cardShadow, cursor:"pointer", transition:"all 0.2s" }}
+                  onClick={()=>{setSelectedLead(lead);loadReport(lead);}}
+                  onMouseEnter={e=>{e.currentTarget.style.boxShadow=C.cardShadowHover;e.currentTarget.style.borderColor="#BFDBFE";}}
+                  onMouseLeave={e=>{e.currentTarget.style.boxShadow=C.cardShadow;e.currentTarget.style.borderColor=C.border;}}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+                    <div style={{ fontSize:"14px", fontWeight:"700", color:C.white }}>{lead.name}</div>
+                    <div style={{ background:sc.bg, color:sc.color, border:`1px solid ${sc.border}`, borderRadius:"6px", padding:"2px 8px", fontSize:"10px", fontWeight:"800" }}>{sc.label}</div>
+                  </div>
+                  <div style={{ fontSize:"11px", color:C.muted, marginBottom:"10px" }}>{lead.type||lead.platform}{" · "}{lead.location||""}</div>
+                  <div style={{ fontSize:"11px", color:C.b2b, fontWeight:"600" }}>{"View Report"}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </PageWrapper>
+    );
+
+    if (activePage === "leads") return (
+      <PageWrapper title="My Leads" subtitle="All saved leads with CRM pipeline"
+        action={savedLeads.length>0?<button onClick={()=>exportToCSV(savedLeads)} style={{ padding:"9px 18px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:"8px", color:C.muted, cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>{"Export CSV"}</button>:null}>
+        <div style={{ display:"flex", gap:"6px", marginBottom:"18px", flexWrap:"wrap" }}>
+          {[{v:"all",l:`All (${savedLeads.length})`},...[{value:"new",label:"New"},{value:"contacted",label:"Contacted"},{value:"inprogress",label:"In Progress"},{value:"closed",label:"Closed Won"},{value:"lost",label:"Lost"}].map(s=>({v:s.value,l:`${s.label} (${savedLeads.filter(l=>l.status===s.value).length})`}))].map(({v,l})=>(
+            <button key={v} onClick={()=>setSavedFilter(v)}
+              style={{ padding:"6px 14px", borderRadius:"20px", border:`1px solid ${savedFilter===v?C.b2b:C.border}`, background:savedFilter===v?C.b2bGlow:"transparent", color:savedFilter===v?C.b2b:C.muted, cursor:"pointer", fontSize:"12px", fontWeight:"600", transition:"all 0.15s" }}>
+              {l}
             </button>
           ))}
+          <button onClick={()=>loadLeads(user.uid)} style={{ padding:"6px 12px", borderRadius:"20px", border:`1px solid ${C.border}`, background:"transparent", color:C.muted, cursor:"pointer", fontSize:"12px" }}>{"Refresh"}</button>
         </div>
+        {(savedFilter==="all"?savedLeads:savedLeads.filter(l=>l.status===savedFilter)).length===0?(
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"48px", textAlign:"center", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"48px", marginBottom:"14px" }}>{"💾"}</div>
+            <div style={{ fontSize:"18px", fontWeight:"800", color:C.white, marginBottom:"8px" }}>{"No leads here"}</div>
+            <div style={{ fontSize:"13px", color:C.muted }}>{"Run a scan and your leads will appear here"}</div>
+          </div>
+        ):(
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:"14px" }}>
+            {(savedFilter==="all"?savedLeads:savedLeads.filter(l=>l.status===savedFilter)).map((lead,i)=>{const sc=scoreColor(lead.score);return <SavedLeadCard key={i} lead={lead} sc={sc} accentColor={lead.mode==="b2c"?C.b2cLight:C.b2b} websiteScore={websiteScores[lead.name]} onReport={()=>{setSelectedLead(lead);loadReport(lead);}} onStatus={s=>updateStatus(lead.id,s)} onNotes={n=>updateNotes(lead.id,n)} onDelete={()=>deleteLead(lead.id)} onScoreWebsite={()=>scoreWebsite(lead)} onCampaign={()=>{setActivePage("campaigns");buildCampaign(lead);}} />;}) }
+          </div>
+        )}
+      </PageWrapper>
+    );
 
-        {/* ── SCAN TAB ── */}
-        {activeTab === "scan" && (
-          <>
-            {/* Session cost notice */}
-            <div style={{ background: `${accentColor}08`, border: `1px solid ${accentColor}20`, borderRadius: "10px", padding: "10px 16px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
-              <span style={{ color: C.muted }}>Each session costs <span style={{ color: accentColor, fontWeight: "700" }}>{CREDITS_PER_SESSION} credits</span> and includes 6 leads + all intelligence reports</span>
-              <span style={{ color: accentColor, fontWeight: "700" }}>{sessionsLeft} sessions remaining</span>
-            </div>
+    if (activePage === "pipeline") return (
+      <PageWrapper title="Pipeline" subtitle="Track every lead through your sales process">
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"14px", alignItems:"start" }}>
+          {[{value:"new",label:"New",color:"#6366F1"},{value:"contacted",label:"Contacted",color:C.b2b},{value:"inprogress",label:"In Progress",color:C.camp},{value:"closed",label:"Closed Won",color:C.comp},{value:"lost",label:"Lost",color:"#EF4444"}].map(col=>{
+            const colLeads=savedLeads.filter(l=>l.status===col.value);
+            return (
+              <div key={col.value}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px", padding:"8px 12px", background:`${col.color}08`, border:`1px solid ${col.color}20`, borderRadius:"8px" }}>
+                  <div style={{ fontSize:"11px", fontWeight:"700", color:col.color, textTransform:"uppercase", letterSpacing:"0.5px" }}>{col.label}</div>
+                  <div style={{ fontSize:"11px", fontWeight:"800", color:col.color, background:`${col.color}12`, padding:"2px 8px", borderRadius:"10px" }}>{colLeads.length}</div>
+                </div>
+                {colLeads.map((lead,i)=>{const sc=scoreColor(lead.score);return (
+                  <div key={i} style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"10px", padding:"14px", marginBottom:"8px", boxShadow:C.cardShadow, cursor:"pointer", transition:"all 0.15s" }}
+                    onClick={()=>{setSelectedLead(lead);loadReport(lead);}}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor=col.color;e.currentTarget.style.boxShadow=`0 2px 8px ${col.color}15`;}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.boxShadow=C.cardShadow;}}>
+                    <div style={{ fontSize:"13px", fontWeight:"700", color:C.white, marginBottom:"3px" }}>{lead.name}</div>
+                    <div style={{ fontSize:"11px", color:C.muted, marginBottom:"8px" }}>{lead.type||lead.platform}</div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ fontSize:"10px", fontWeight:"800", padding:"2px 7px", borderRadius:"4px", background:sc.bg, color:sc.color, border:`1px solid ${sc.border}` }}>{sc.label}</div>
+                      <div style={{ fontSize:"11px", color:C.b2b, fontWeight:"600" }}>{"View"}</div>
+                    </div>
+                  </div>
+                );})}
+                {colLeads.length===0&&<div style={{ padding:"20px 14px", background:C.bg3, border:`1px dashed ${C.border}`, borderRadius:"8px", textAlign:"center", fontSize:"11px", color:C.dim }}>{"Empty"}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </PageWrapper>
+    );
 
-            {/* B2B SCAN */}
-            {safeMode === "b2b" && (
-              <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
-                <div style={{ fontSize: "11px", fontWeight: "800", color: accentColor, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "16px" }}>{"⚡ SCAN FOR HOT LEADS"}</div>
-                <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-                  {[
-                    { label: "Target Industry", key: "targetIndustry", ph: "Restaurants, Clinics, Real Estate..." },
-                    { label: "Location", key: "location", ph: "Beirut, Dubai, Kuwait City..." },
-                  ].map(f => (
-                    <div key={f.key} style={{ flex: 1, minWidth: "180px" }}>
-                      <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: C.dim, marginBottom: "7px", letterSpacing: "1px", textTransform: "uppercase" }}>{f.label}</label>
-                      <input value={profile[f.key]} onChange={e => setProfile(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
-                        style={{ width: "100%", padding: "11px 13px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.white, fontSize: "13px" }} />
+    if (activePage === "settings") return (
+      <PageWrapper title="Settings" subtitle="Manage your profile and preferences">
+        <div style={{ display:"grid", gridTemplateColumns:"200px 1fr", gap:"20px" }}>
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"8px", boxShadow:C.cardShadow, height:"fit-content" }}>
+            {[{key:"profile",icon:"👤",label:"Profile"},{key:"mode",icon:"🔄",label:"Lead Mode"},{key:"outreach",icon:"💬",label:"Outreach"}].map(t=>(
+              <button key={t.key} onClick={()=>setSettingsTab(t.key)}
+                style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:"10px 14px", border:"none", borderRadius:"8px", cursor:"pointer", fontSize:"13px", fontWeight:"600", textAlign:"left", background:settingsTab===t.key?C.b2bGlow:"transparent", color:settingsTab===t.key?C.b2b:C.muted, transition:"all 0.15s" }}>
+                <span>{t.icon}</span>{t.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"24px", boxShadow:C.cardShadow }}>
+            {settingsTab==="profile"&&(
+              <div>
+                <div style={{ fontSize:"16px", fontWeight:"800", color:C.white, marginBottom:"20px" }}>{"Business Profile"}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px" }}>
+                  {[{lbl:"Business Name",key:"businessName",ph:"Peach Agency"},{lbl:"Business Email",key:"businessEmail",ph:"hello@agency.com"},{lbl:"Target Industry",key:"targetIndustry",ph:"Restaurants, Clinics..."},{lbl:"Location",key:"location",ph:"Beirut, Dubai..."}].map(f=>(
+                    <div key={f.key}>
+                      <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:C.muted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{f.lbl}</label>
+                      <input value={profile[f.key]||""} onChange={e=>setProfile(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph}
+                        style={{ width:"100%", padding:"10px 14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.white, fontSize:"13px" }} />
                     </div>
                   ))}
-                  <button onClick={scanB2B} disabled={scanning || userData.credits < CREDITS_PER_SESSION}
-                    style={{ padding: "11px 24px", background: scanning || userData.credits < CREDITS_PER_SESSION ? C.bg3 : `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "9px", color: scanning || userData.credits < CREDITS_PER_SESSION ? C.dim : "#fff", fontSize: "13px", fontWeight: "700", cursor: scanning || userData.credits < CREDITS_PER_SESSION ? "not-allowed" : "pointer", whiteSpace: "nowrap", boxShadow: scanning ? "none" : `0 4px 16px ${C.b2bGlow}` }}>
-                    {scanning ? "Scanning..." : "Find Leads →"}
-                  </button>
+                  <div style={{ gridColumn:"1/-1" }}>
+                    <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:C.muted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{"What You Offer"}</label>
+                    <textarea value={profile.whatYouDo||""} onChange={e=>setProfile(p=>({...p,whatYouDo:e.target.value}))} placeholder="Social media management, web design, ads..."
+                      style={{ width:"100%", padding:"10px 14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.white, fontSize:"13px", minHeight:"80px", resize:"vertical", fontFamily:"Inter,sans-serif" }} />
+                  </div>
                 </div>
-                {scanProgress && <div style={{ marginTop: "12px", fontSize: "12px", color: accentColor, display: "flex", alignItems: "center", gap: "8px" }}><LoadingDots color={accentColor} />{scanProgress}</div>}
-                {scanErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "10px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{scanErr}</div>}
-                {savedLeads.length > 0 && (
-                  <button onClick={() => exportToCSV(savedLeads)} style={{ marginTop: "14px", padding: "7px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>{"📊 Export All Leads CSV"}</button>
-                )}
+                <button onClick={async()=>{await updateDoc(doc(db,"users",user.uid),{profile});}}
+                  style={{ marginTop:"18px", padding:"10px 24px", background:C.b2b, border:"none", borderRadius:"8px", color:"#fff", fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>
+                  {"Save Changes"}
+                </button>
               </div>
             )}
-
-            {/* B2C SECTION */}
-            {safeMode === "b2c" && (
+            {settingsTab==="mode"&&(
               <div>
-                {/* B2C Mode selector */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px", marginBottom: "16px" }}>
-                  {[
-                    { key: "csv", icon: "📤", label: "Ad Data Upload", desc: "Meta / TikTok / Google", color: C.b2cLight, locked: false },
-                    { key: "reviews", icon: "⭐", label: "Google Reviews", desc: "Real people · Real intent", color: "#4285F4", locked: !canUseReviews },
-                    { key: "apollo", icon: "🚀", label: "Email Enrichment", desc: "Emails · LinkedIn · Phones", color: "#7C3AED", locked: !canUseApollo },
-                    { key: "social", icon: "👥", label: "Social Finder", desc: "Instagram · Facebook", color: "#EC4899", locked: !canUseSocial },
-                  ].map(m => (
-                    <div key={m.key} onClick={() => !m.locked && setB2cMode(m.key)}
-                      style={{ background: b2cMode === m.key ? `${m.color}12` : C.bg2, border: `2px solid ${b2cMode === m.key ? m.color : m.locked ? "rgba(255,255,255,0.04)" : C.border}`, borderRadius: "12px", padding: "14px 10px", cursor: m.locked ? "default" : "pointer", opacity: m.locked ? 0.5 : 1, transition: "all 0.2s", position: "relative", textAlign: "center" }}>
-                      {m.locked && <div style={{ position: "absolute", top: "8px", right: "8px", fontSize: "9px", fontWeight: "800", padding: "2px 6px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", color: C.dim }}>{"🔒"}</div>}
-                      <div style={{ fontSize: "22px", marginBottom: "6px" }}>{m.icon}</div>
-                      <div style={{ fontSize: "11px", fontWeight: "800", color: b2cMode === m.key ? m.color : m.locked ? C.dim : C.white, marginBottom: "3px" }}>{m.label}</div>
-                      <div style={{ fontSize: "10px", color: C.dim, lineHeight: "1.4" }}>{m.desc}</div>
-                      {m.locked && (
-                        <div style={{ marginTop: "7px", fontSize: "9px", fontWeight: "700", color: m.color }}>{"Upgrade to unlock"}</div>
-                      )}
-                      {!m.locked && b2cMode === m.key && <div style={{ marginTop: "7px", fontSize: "10px", color: m.color, fontWeight: "700" }}>{"✓ Active"}</div>}
-                    </div>
-                  ))}
-                </div>
-
-                {/* CSV Upload */}
-                {b2cMode === "csv" && (
-                  <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "14px", padding: "22px" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: C.b2cLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📤 UPLOAD AD DATA"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"AI auto-detects format — Meta, TikTok, Google Ads, or any CSV"}</div>
-                    <div onClick={() => fileRef.current?.click()}
-                      style={{ border: `2px dashed ${csvName ? C.b2cBorder : C.border}`, borderRadius: "12px", padding: "28px", textAlign: "center", cursor: "pointer", background: csvName ? C.b2cGlow : "transparent", marginBottom: "14px" }}>
-                      <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
-                      <div style={{ fontSize: "28px", marginBottom: "8px" }}>{csvName ? "✅" : "📂"}</div>
-                      <div style={{ fontSize: "13px", fontWeight: "700", color: csvName ? C.b2cLight : C.white, marginBottom: "3px" }}>{csvName || "Click to upload CSV"}</div>
-                      <div style={{ fontSize: "12px", color: C.dim }}>{csvData.length > 0 ? `${csvData.length} rows loaded` : "Meta · TikTok · Google · Any format"}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: "7px", marginBottom: "14px", flexWrap: "wrap" }}>
-                      {["Meta Ads", "TikTok Ads", "Google Ads", "Other"].map(p => (
-                        <button key={p} onClick={() => setProfile(pr => ({ ...pr, b2cPlatform: p }))}
-                          style={{ padding: "6px 14px", borderRadius: "8px", border: `1px solid ${profile.b2cPlatform === p ? C.b2cBorder : C.border}`, background: profile.b2cPlatform === p ? C.b2cGlow : "transparent", color: profile.b2cPlatform === p ? C.b2cLight : C.dim, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                    <button onClick={processCSV} disabled={csvProcessing || !csvData.length || userData.credits < CREDITS_PER_SESSION}
-                      style={{ width: "100%", padding: "12px", background: !csvData.length || csvProcessing ? C.bg3 : `linear-gradient(135deg, ${C.b2c}, ${C.b2cLight})`, border: "none", borderRadius: "9px", color: !csvData.length || csvProcessing ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: !csvData.length || csvProcessing ? "not-allowed" : "pointer" }}>
-                      {csvProcessing ? "Analyzing..." : csvData.length > 0 ? `Analyze ${csvData.length} Rows →` : "Upload CSV to continue"}
-                    </button>
-                    {csvProgress && <div style={{ marginTop: "10px", fontSize: "12px", color: C.b2cLight }}>{csvProgress}</div>}
-                    {csvErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "9px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{csvErr}</div>}
-                  </div>
-                )}
-
-                {/* Google Reviews */}
-                {b2cMode === "reviews" && canUseReviews && (
-                  <div style={{ background: C.bg2, border: "1px solid rgba(66,133,244,0.3)", borderRadius: "14px", padding: "22px" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#4285F4", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"⭐ GOOGLE REVIEWS FINDER"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "6px" }}>{"Find real people who left unhappy reviews at your competitors — they're ready to switch to you"}</div>
-                    <div style={{ background: "rgba(66,133,244,0.08)", border: "1px solid rgba(66,133,244,0.15)", borderRadius: "8px", padding: "10px 12px", marginBottom: "16px", fontSize: "12px", color: "#93C5FD" }}>
-                      {"🎯 Strategy: 1-3 star reviewers = unhappy with competitor = your hottest prospects"}
-                    </div>
-                    <div style={{ display: "flex", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
-                      {[{ label: "Business Type", key: "business", ph: "gym, salon, restaurant..." }, { label: "Location", key: "location", ph: "Dubai, Beirut, Kuwait..." }].map(f => (
-                        <div key={f.key} style={{ flex: 1, minWidth: "160px" }}>
-                          <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.label}</label>
-                          <input value={reviewQuery[f.key]} onChange={e => setReviewQuery(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
-                            style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={findReviewLeads} disabled={reviewLoading || !reviewQuery.business || !reviewQuery.location || userData.credits < CREDITS_PER_SESSION}
-                      style={{ width: "100%", padding: "12px", background: reviewLoading || !reviewQuery.business || !reviewQuery.location ? C.bg3 : "linear-gradient(135deg, #1A73E8, #4285F4)", border: "none", borderRadius: "9px", color: reviewLoading || !reviewQuery.business || !reviewQuery.location ? C.dim : "#fff", fontSize: "14px", fontWeight: "700", cursor: reviewLoading || !reviewQuery.business || !reviewQuery.location ? "not-allowed" : "pointer" }}>
-                      {reviewLoading ? "Finding leads..." : "Find Reviewer Leads →"}
-                    </button>
-                    {reviewLoading && <div style={{ marginTop: "10px" }}><LoadingDots color="#4285F4" /></div>}
-                    {reviewErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "9px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{reviewErr}</div>}
-                    {reviewLeads.length > 0 && !reviewLoading && (
-                      <div style={{ marginTop: "16px" }}>
-                        <div style={{ fontSize: "11px", fontWeight: "700", color: "#4285F4", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "1px" }}>{"⭐ "}{reviewLeads.length}{" Reviewer Leads Found"}</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: "10px" }}>
-                          {reviewLeads.map((lead, i) => {
-                            const sc = scoreColor(lead.score);
-                            const saved = savedLeads.find(s => s.name === lead.name);
-                            return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode="b2c" accentColor="#4285F4" accentGlow="rgba(66,133,244,0.1)" websiteScore={null} onReport={() => loadReport(saved || lead)} onCampaign={() => { setActiveTab("campaigns"); buildCampaign(lead); }} />;
-                          })}
+                <div style={{ fontSize:"16px", fontWeight:"800", color:C.white, marginBottom:"6px" }}>{"Lead Mode"}</div>
+                <div style={{ fontSize:"13px", color:C.muted, marginBottom:"20px" }}>{"Choose which lead types are active for your account"}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom:"16px" }}>
+                  {[{m:"b2b",icon:"🏢",label:"B2B Mode",desc:"Find businesses weak in what you offer. Perfect for agencies.",color:C.b2b,glow:C.b2bGlow},{m:"b2c",icon:"👥",label:"B2C Mode",desc:"Find individual customers. Best for gyms, salons, restaurants.",color:C.b2cLight,glow:C.b2cGlow}].map(opt=>{
+                    const isActive=mode===opt.m||mode==="both";
+                    return (
+                      <div key={opt.m} onClick={()=>{const nm=mode==="both"?(opt.m==="b2b"?"b2c":"b2b"):(mode===opt.m?"both":opt.m);setMode(nm);updateDoc(doc(db,"users",user.uid),{mode:nm});}}
+                        style={{ background:isActive?`${opt.color}06`:C.bg3, border:`2px solid ${isActive?opt.color:C.border}`, borderRadius:"12px", padding:"20px", cursor:"pointer", transition:"all 0.2s" }}>
+                        <div style={{ fontSize:"28px", marginBottom:"10px" }}>{opt.icon}</div>
+                        <div style={{ fontSize:"14px", fontWeight:"800", color:isActive?opt.color:C.white, marginBottom:"6px" }}>{opt.label}</div>
+                        <div style={{ fontSize:"12px", color:C.muted, lineHeight:"1.6", marginBottom:"12px" }}>{opt.desc}</div>
+                        <div style={{ display:"inline-flex", alignItems:"center", gap:"5px", padding:"4px 12px", borderRadius:"20px", background:isActive?`${opt.color}10`:C.bg, border:`1px solid ${isActive?opt.color:C.border}` }}>
+                          <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:isActive?opt.color:C.dim }} />
+                          <span style={{ fontSize:"11px", fontWeight:"700", color:isActive?opt.color:C.dim }}>{isActive?"Active":"Inactive"}</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Apollo Enrichment */}
-                {b2cMode === "apollo" && canUseApollo && (
-                  <div style={{ background: C.bg2, border: "1px solid rgba(124,58,237,0.3)", borderRadius: "14px", padding: "22px", textAlign: "center" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#7C3AED", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>{"🚀 EMAIL ENRICHMENT"}</div>
-                    <div style={{ fontSize: "42px", marginBottom: "12px" }}>{"🚀"}</div>
-                    <div style={{ fontSize: "16px", fontWeight: "800", marginBottom: "8px" }}>{"Coming in Next Update"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px", maxWidth: "400px", margin: "0 auto 16px" }}>{"Apollo.io enrichment will automatically find verified emails and LinkedIn profiles for all your saved leads."}</div>
-                    <button onClick={() => setActiveTab("saved")} style={{ padding: "10px 24px", background: "rgba(124,58,237,0.2)", border: "1px solid rgba(124,58,237,0.4)", borderRadius: "9px", color: "#A78BFA", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                      {"View My Saved Leads →"}
-                    </button>
-                  </div>
-                )}
-
-                {/* Social Finder */}
-                {b2cMode === "social" && canUseSocial && (
-                  <div style={{ background: C.bg2, border: "1px solid rgba(236,72,153,0.3)", borderRadius: "14px", padding: "22px", textAlign: "center" }}>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: "#EC4899", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "12px" }}>{"👥 SOCIAL MEDIA FINDER"}</div>
-                    <div style={{ fontSize: "42px", marginBottom: "12px" }}>{"👥"}</div>
-                    <div style={{ fontSize: "16px", fontWeight: "800", marginBottom: "8px" }}>{"Coming in Next Update"}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, maxWidth: "400px", margin: "0 auto" }}>{"Instagram followers, Facebook group members and public social profiles — being built now for Pro users."}</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-
-            {(scanning || csvProcessing) && (
-              <div style={{ textAlign: "center", padding: "60px" }}>
-                <LoadingDots color={accentColor} />
-                <div style={{ fontSize: "15px", fontWeight: "700", marginTop: "16px", marginBottom: "6px" }}>
-                  {safeMode === "b2b" ? `Finding hot ${profile.targetIndustry || "businesses"} in ${profile.location || "your area"}...` : "Analyzing your ad data..."}
-                </div>
-                <div style={{ fontSize: "13px", color: C.dim }}>{scanProgress || csvProgress}</div>
-              </div>
-            )}
-
-            {leads.length > 0 && !scanning && !csvProcessing && (
-              <>
-                <div style={{ fontSize: "12px", fontWeight: "700", color: C.muted, letterSpacing: "1px", textTransform: "uppercase", marginBottom: "14px" }}>
-                  {"⚡ "}{leads.length}{" Leads Found — Auto-saved ✅ — Reports included in this session"}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px,1fr))", gap: "14px" }}>
-                  {[...leads].sort((a, b) => b.score - a.score).map((lead, i) => {
-                    const sc = scoreColor(lead.score || 70);
-                    const saved = savedLeads.find(s => s.name === lead.name);
-                    const ws = websiteScores[lead.name];
-                    return <LeadCard key={i} lead={lead} saved={saved} sc={sc} mode={safeMode} accentColor={accentColor} accentGlow={accentGlow} websiteScore={ws} onReport={() => loadReport(saved || lead)} onCampaign={() => { setActiveTab("campaigns"); buildCampaign(lead); }} />;
-                  })}
-                </div>
-              </>
-            )}
-
-            {leads.length === 0 && !scanning && !csvProcessing && (
-              <div style={{ textAlign: "center", padding: "70px 24px" }}>
-                <div style={{ fontSize: "48px", marginBottom: "14px" }}>{safeMode === "b2b" ? "🎯" : "📊"}</div>
-                <div style={{ fontSize: "22px", fontWeight: "900", marginBottom: "8px", letterSpacing: "-0.5px" }}>
-                  {safeMode === "b2b" ? "READY TO FIND HOT LEADS?" : "READY TO ANALYZE YOUR DATA?"}
-                </div>
-                <div style={{ fontSize: "14px", color: C.dim, marginBottom: "40px" }}>
-                  {safeMode === "b2b" ? "Each session finds 6 businesses + full AI reports for all" : "Upload your ad data and AI will score every contact"}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "14px", maxWidth: "640px", margin: "0 auto" }}>
-                  {(safeMode === "b2b" ? [
-                    { icon: "🔍", t: "SMART SCANNING", d: "AI finds businesses weak in what you offer" },
-                    { icon: "🌐", t: "WEBSITE SCORING", d: "Rate each business website 0-100" },
-                    { icon: "🧠", t: "DEEP INTEL", d: "Psychology, objections & pitch strategy" },
-                  ] : [
-                    { icon: "📤", t: "ANY FORMAT", d: "Meta, TikTok, Google Ads or any CSV" },
-                    { icon: "🤖", t: "AI ANALYSIS", d: "Scores every contact HOT/WARM/COLD" },
-                    { icon: "✉️", t: "DM TEMPLATES", d: "Personalized message per contact" },
-                  ]).map((f, i) => (
-                    <div key={i} style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "20px 16px" }}>
-                      <div style={{ fontSize: "26px", marginBottom: "10px" }}>{f.icon}</div>
-                      <div style={{ fontSize: "10px", fontWeight: "800", color: accentColor, letterSpacing: "2px", marginBottom: "6px" }}>{f.t}</div>
-                      <div style={{ fontSize: "12px", color: C.dim, lineHeight: "1.5" }}>{f.d}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ── SAVED LEADS TAB ── */}
-        {activeTab === "saved" && (
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-                <button onClick={() => loadLeads(user.uid)} style={{ padding: "5px 12px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>🔄</button>
-                {[{ v: "all", l: `All (${savedLeads.length})` }, ...STATUS_OPTIONS.map(s => ({ v: s.value, l: `${s.label} (${savedLeads.filter(l => l.status === s.value).length})` }))].map(({ v, l }) => (
-                  <button key={v} onClick={() => setSavedFilter(v)}
-                    style={{ padding: "5px 12px", borderRadius: "20px", border: `1px solid ${savedFilter === v ? accentColor : C.border}`, background: savedFilter === v ? accentGlow : "transparent", color: savedFilter === v ? accentColor : C.dim, cursor: "pointer", fontSize: "11px", fontWeight: "600", transition: "all 0.2s" }}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-              {savedLeads.length > 0 && (
-                <button onClick={() => exportToCSV(savedLeads)} style={{ padding: "6px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>{"📊 Export CSV"}</button>
-              )}
-            </div>
-
-            {savedLeads.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "70px 24px" }}>
-                <div style={{ fontSize: "48px", marginBottom: "14px" }}>{"💾"}</div>
-                <div style={{ fontSize: "20px", fontWeight: "800", marginBottom: "8px" }}>NO SAVED LEADS YET</div>
-                <div style={{ fontSize: "13px", color: C.dim, marginBottom: "20px" }}>Run a scan and leads will be saved here automatically</div>
-                <button onClick={() => setActiveTab("scan")} style={{ padding: "11px 28px", background: `linear-gradient(135deg, ${C.b2b}, ${C.b2bLight})`, border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>Start Scanning →</button>
-              </div>
-            ) : (
-              <>
-                {(savedFilter === "all" ? savedLeads : savedLeads.filter(l => l.status === savedFilter)).length === 0 && (
-                  <div style={{ textAlign: "center", padding: "40px", color: C.dim, fontSize: "14px" }}>No leads with "{savedFilter}" status yet</div>
-                )}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px,1fr))", gap: "14px" }}>
-                  {(savedFilter === "all" ? savedLeads : savedLeads.filter(l => l.status === savedFilter)).map((lead, i) => {
-                    const sc = scoreColor(lead.score || 70);
-                    const ws = websiteScores[lead.name];
-                    return (
-                      <SavedLeadCard key={i} lead={lead} sc={sc} accentColor={accentColor} websiteScore={ws}
-                        onReport={() => loadReport(lead)}
-                        onStatus={s => updateStatus(lead.id, s)}
-                        onNotes={n => updateNotes(lead.id, n)}
-                        onDelete={() => deleteLead(lead.id)}
-                        onScoreWebsite={() => scoreWebsite(lead)}
-                        onCampaign={() => { setActiveTab("campaigns"); buildCampaign(lead); }} />
                     );
                   })}
                 </div>
-              </>
+                <div style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:"10px", padding:"12px 16px", fontSize:"13px", color:"#1D4ED8" }}>
+                  {"Current: "}<strong>{mode==="both"?"B2B + B2C active":mode==="b2b"?"B2B only":"B2C only"}</strong>
+                </div>
+              </div>
             )}
-          </>
-        )}
-
-        {/* ── COMPETITOR TAB ── */}
-        {activeTab === "competitors" && (
-          <>
-            <div style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
-              <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"🕵️ COMPETITOR RADAR"}</div>
-              <div style={{ fontSize: "13px", color: C.muted, marginBottom: "16px" }}>{"Analyze top competitors and find their weaknesses"}</div>
-              <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-                {[{ label: "Industry / Business Type", key: "industry", ph: "Web design agencies, Marketing firms..." }, { label: "Location", key: "location", ph: "Dubai, Beirut, Kuwait..." }].map(f => (
-                  <div key={f.key} style={{ flex: 1, minWidth: "180px" }}>
-                    <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: C.dim, marginBottom: "6px", letterSpacing: "1px", textTransform: "uppercase" }}>{f.label}</label>
-                    <input value={compQuery[f.key]} onChange={e => setCompQuery(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.ph}
-                      style={{ width: "100%", padding: "10px 12px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.white, fontSize: "13px" }} />
-                  </div>
-                ))}
-                <button onClick={scanCompetitors} disabled={compScanning || userData.credits < CREDITS_PER_SESSION}
-                  style={{ padding: "10px 22px", background: compScanning ? C.bg3 : `linear-gradient(135deg, ${C.comp}, ${C.compLight})`, border: "none", borderRadius: "8px", color: compScanning ? C.dim : "#fff", fontSize: "13px", fontWeight: "700", cursor: compScanning ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
-                  {compScanning ? "Analyzing..." : "Analyze Competitors →"}
+            {settingsTab==="outreach"&&(
+              <div>
+                <div style={{ fontSize:"16px", fontWeight:"800", color:C.white, marginBottom:"6px" }}>{"Outreach Settings"}</div>
+                <div style={{ fontSize:"13px", color:C.muted, marginBottom:"20px" }}>{"Used for one-click WhatsApp and Email from lead reports"}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px" }}>
+                  {[{lbl:"WhatsApp Number",key:"whatsappNumber",ph:"+961 XX XXX XXX"},{lbl:"Business Phone",key:"businessPhone",ph:"+961 XX XXX XXX"}].map(f=>(
+                    <div key={f.key}>
+                      <label style={{ display:"block", fontSize:"11px", fontWeight:"600", color:C.muted, marginBottom:"6px", textTransform:"uppercase", letterSpacing:"0.5px" }}>{f.lbl}</label>
+                      <input value={profile[f.key]||""} onChange={e=>setProfile(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph}
+                        style={{ width:"100%", padding:"10px 14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.white, fontSize:"13px" }} />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={async()=>{await updateDoc(doc(db,"users",user.uid),{profile});}}
+                  style={{ marginTop:"18px", padding:"10px 24px", background:C.b2b, border:"none", borderRadius:"8px", color:"#fff", fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>
+                  {"Save Changes"}
                 </button>
               </div>
-              {compScanning && <div style={{ marginTop: "10px" }}><LoadingDots color={C.compLight} /></div>}
-              {compErr && <div style={{ color: "#F87171", fontSize: "12px", marginTop: "10px", padding: "9px", background: "rgba(239,68,68,0.08)", borderRadius: "8px" }}>{compErr}</div>}
-            </div>
-            {competitors.length > 0 ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: "12px" }}>
-                {competitors.map((comp, i) => {
-                  const tc = comp.threatLevel === "High" ? "#F87171" : comp.threatLevel === "Medium" ? "#FCD34D" : "#34D399";
-                  return (
-                    <div key={i} style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "13px", padding: "18px", display: "flex", flexDirection: "column" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <div>
-                          <div style={{ fontSize: "14px", fontWeight: "800" }}>{comp.name}</div>
-                          <div style={{ fontSize: "10px", color: C.compLight, fontWeight: "700", textTransform: "uppercase" }}>{comp.marketPosition}</div>
-                        </div>
-                        <div style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: "8px", color: C.dim, fontWeight: "700" }}>STRENGTH</div>
-                          <div style={{ fontSize: "20px", fontWeight: "900", color: C.compLight }}>{comp.strength}</div>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "5px", background: `${tc}15`, color: tc, border: `1px solid ${tc}30`, display: "inline-block", marginBottom: "8px", width: "fit-content" }}>⚠ {comp.threatLevel} Threat</span>
-                      {comp.website && comp.website !== "N/A" && <a href={comp.website.startsWith("http") ? comp.website : `https://${comp.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "11px", color: C.compLight, marginBottom: "8px", display: "block" }}>🌐 {comp.website} ↗</a>}
-                      <div style={{ marginBottom: "6px" }}>{(comp.strongPoints || []).slice(0, 2).map((s, j) => <div key={j} style={{ fontSize: "11px", color: "#34D399" }}>✓ {s}</div>)}</div>
-                      <div style={{ marginBottom: "8px" }}>{(comp.weakPoints || []).slice(0, 2).map((w, j) => <div key={j} style={{ fontSize: "11px", color: "#F87171" }}>✗ {w}</div>)}</div>
-                      <div style={{ fontSize: "11px", color: C.muted, flexGrow: 1, marginBottom: "10px" }}>🎯 {comp.ourAdvantage}</div>
-                      <button onClick={() => loadCompReport(comp)} style={{ width: "100%", padding: "9px", background: C.compGlow, border: `1px solid ${C.compBorder}`, borderRadius: "8px", color: C.compLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>Deep Analysis →</button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : !compScanning && (
-              <div style={{ textAlign: "center", padding: "60px" }}>
-                <div style={{ fontSize: "46px", marginBottom: "12px" }}>{"🕵️"}</div>
-                <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>KNOW YOUR COMPETITION</div>
-                <div style={{ fontSize: "13px", color: C.dim }}>Analyze top competitors · Find their weaknesses · Exploit their gaps</div>
-              </div>
             )}
-          </>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+
+    if (activePage === "billing") return (
+      <PageWrapper title="Plan and Billing" subtitle="Manage your subscription">
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:"20px", marginBottom:"28px" }}>
+          <div style={{ background:C.bg2, border:`1px solid ${plan.color}30`, borderRadius:"12px", padding:"24px", boxShadow:C.cardShadow }}>
+            <div style={{ fontSize:"11px", fontWeight:"700", color:plan.color, textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"8px" }}>{"Current Plan"}</div>
+            <div style={{ fontSize:"28px", fontWeight:"900", color:plan.color, marginBottom:"2px" }}>{plan.name}</div>
+            <div style={{ fontSize:"15px", color:C.muted, marginBottom:"18px" }}>{"$"}{plan.price}{"/month"}</div>
+            <div style={{ display:"flex", gap:"20px", marginBottom:"16px", padding:"14px", background:C.bg3, borderRadius:"10px" }}>
+              <div><div style={{ fontSize:"28px", fontWeight:"900", color:plan.color }}>{userData.credits}</div><div style={{ fontSize:"11px", color:C.muted }}>{"credits"}</div></div>
+              <div><div style={{ fontSize:"28px", fontWeight:"900", color:plan.color }}>{sessionsLeft}</div><div style={{ fontSize:"11px", color:C.muted }}>{"sessions"}</div></div>
+            </div>
+            <div style={{ width:"100%", height:"6px", background:C.bg3, borderRadius:"3px", overflow:"hidden", marginBottom:"18px" }}>
+              <div style={{ width:`${creditPct}%`, height:"100%", background:`linear-gradient(90deg, ${plan.color}, ${C.b2bLight})`, borderRadius:"3px" }} />
+            </div>
+            <button onClick={()=>setScreen("plan")} style={{ width:"100%", padding:"10px", background:C.b2b, border:"none", borderRadius:"8px", color:"#fff", fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>{"Upgrade Plan"}</button>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"12px" }}>
+            {Object.entries(PLANS).map(([key,p])=>{
+              const isCurrent=userData.plan===key;
+              return (
+                <div key={key} style={{ background:isCurrent?`${p.color}06`:C.bg2, border:`2px solid ${isCurrent?p.color:C.border}`, borderRadius:"12px", padding:"20px", boxShadow:C.cardShadow, position:"relative" }}>
+                  {key==="growth"&&<div style={{ position:"absolute", top:"-10px", left:"50%", transform:"translateX(-50%)", background:C.b2b, color:"#fff", fontSize:"9px", fontWeight:"800", padding:"3px 12px", borderRadius:"20px", whiteSpace:"nowrap" }}>{"MOST POPULAR"}</div>}
+                  <div style={{ fontSize:"20px", fontWeight:"900", color:p.color, marginBottom:"2px" }}>{"$"}{p.price}</div>
+                  <div style={{ fontSize:"10px", color:C.muted, marginBottom:"10px" }}>{"/month"}</div>
+                  <div style={{ fontSize:"15px", fontWeight:"800", color:C.white, marginBottom:"4px" }}>{p.name}</div>
+                  <div style={{ fontSize:"11px", color:C.muted, marginBottom:"14px" }}>{p.sessions}{" sessions · "}{p.leads}{" leads"}</div>
+                  {isCurrent?<div style={{ padding:"8px", background:`${p.color}10`, border:`1px solid ${p.color}25`, borderRadius:"7px", color:p.color, fontSize:"12px", fontWeight:"700", textAlign:"center" }}>{"Current Plan"}</div>
+                    :<button onClick={()=>setScreen("plan")} style={{ width:"100%", padding:"8px", background:p.color, border:"none", borderRadius:"7px", color:"#fff", fontSize:"12px", fontWeight:"700", cursor:"pointer" }}>{"Upgrade"}</button>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </PageWrapper>
+    );
+
+    return null;
+  };
+
+  return (
+    <div style={{ display:"flex", minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif" }}>
+      <style>{CSS}</style>
+
+      {/* SIDEBAR */}
+      <div style={{ width:sidebarCollapsed?"64px":"240px", background:C.bg2, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", transition:"width 0.25s ease", flexShrink:0, position:"sticky", top:0, height:"100vh", overflowY:"auto", overflowX:"hidden" }}>
+        <div style={{ padding:sidebarCollapsed?"18px 16px":"18px 20px", display:"flex", alignItems:"center", gap:"10px", borderBottom:`1px solid ${C.border}`, cursor:"pointer", minHeight:"64px" }} onClick={()=>setActivePage("dashboard")}>
+          <div style={{ flexShrink:0 }}>
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="8" fill="#2563EB"/>
+              <ellipse cx="16" cy="14" rx="7" ry="6" fill="none" stroke="white" strokeWidth="1.8"/>
+              <path d="M10 14c0-1 1-3 3-4M18 10c2 1 4 2.5 4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="16" cy="14" r="2" fill="white"/>
+              <path d="M13 20l3 4 3-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="24" cy="8" r="3.5" fill="#F59E0B"/>
+              <path d="M22.8 8l.8.8 1.7-1.6" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          {!sidebarCollapsed&&(
+            <div style={{ overflow:"hidden" }}>
+              <div style={{ fontSize:"15px", fontWeight:"900", color:C.b2b, letterSpacing:"-0.3px", whiteSpace:"nowrap" }}>{"PitchMind"}</div>
+              <div style={{ fontSize:"10px", color:C.muted, fontWeight:"500", whiteSpace:"nowrap" }}>{"AI Lead Intelligence"}</div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex:1, padding:"10px 8px", overflowY:"auto" }}>
+          {navGroups.map((group,gi)=>(
+            <div key={gi} style={{ marginBottom:"4px" }}>
+              {!sidebarCollapsed&&<div style={{ fontSize:"10px", fontWeight:"700", color:C.dim, letterSpacing:"0.8px", textTransform:"uppercase", padding:"8px 10px 4px" }}>{group.label}</div>}
+              {sidebarCollapsed&&gi>0&&<div style={{ height:"1px", background:C.border, margin:"6px 8px" }} />}
+              {group.items.map(item=>{
+                const isActive=activePage===item.key;
+                return (
+                  <button key={item.key} onClick={()=>setActivePage(item.key)} title={sidebarCollapsed?item.label:""}
+                    style={{ width:"100%", display:"flex", alignItems:"center", gap:"10px", padding:sidebarCollapsed?"10px 0":"9px 12px", border:"none", borderRadius:"8px", cursor:"pointer", fontSize:"13px", fontWeight:isActive?"700":"500", textAlign:"left", background:isActive?C.b2bGlow:"transparent", color:isActive?C.b2b:C.muted, transition:"all 0.15s", marginBottom:"1px", justifyContent:sidebarCollapsed?"center":"flex-start" }}
+                    onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.bg3;e.currentTarget.style.color=C.white;}}}
+                    onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.muted;}}}>
+                    <span style={{ fontSize:"16px", flexShrink:0 }}>{item.icon}</span>
+                    {!sidebarCollapsed&&<span style={{ whiteSpace:"nowrap" }}>{item.label}</span>}
+                    {!sidebarCollapsed&&isActive&&<div style={{ width:"5px", height:"5px", borderRadius:"50%", background:C.b2b, marginLeft:"auto" }} />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {!sidebarCollapsed&&(
+          <div style={{ padding:"12px 14px", borderTop:`1px solid ${C.border}`, background:C.bg3 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
+              <div style={{ fontSize:"11px", fontWeight:"600", color:C.muted }}>{"Sessions"}</div>
+              <div style={{ fontSize:"11px", fontWeight:"700", color:C.b2b }}>{sessionsLeft}{" left"}</div>
+            </div>
+            <div style={{ width:"100%", height:"4px", background:C.border, borderRadius:"2px", overflow:"hidden", marginBottom:"6px" }}>
+              <div style={{ width:`${creditPct}%`, height:"100%", background:C.b2b, borderRadius:"2px" }} />
+            </div>
+            <div style={{ fontSize:"10px", color:C.dim, fontWeight:"600" }}>{plan.name}{" Plan"}</div>
+          </div>
         )}
 
-        {/* ── CAMPAIGN TAB ── */}
-        {activeTab === "campaigns" && (
-          <>
-            <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "22px", marginBottom: "20px" }}>
-              <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"📣 CAMPAIGN BUILDER"}</div>
-              <div style={{ fontSize: "13px", color: C.muted }}>
-                {"Go to "}<strong style={{ color: C.campLight }}>{"Scan Leads"}</strong>{" or "}<strong style={{ color: C.campLight }}>{"My Leads"}</strong>{", click "}<strong style={{ color: C.campLight }}>{"📣"}</strong>{" on any lead card to build a full campaign."}
-              </div>
-            </div>
-            {campaignLoading && <div style={{ textAlign: "center", padding: "50px" }}><LoadingDots color={C.campLight} /><div style={{ fontSize: "14px", fontWeight: "700", marginTop: "14px" }}>Building campaign...</div></div>}
-            {campaign && !campaignLoading && (
-              <div style={{ background: C.bg2, border: `1px solid ${C.campBorder}`, borderRadius: "14px", padding: "24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-                  <div>
-                    <div style={{ fontSize: "11px", fontWeight: "800", color: C.campLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "4px" }}>{"FOR: "}{campaign.leadName}</div>
-                    <div style={{ fontSize: "20px", fontWeight: "800" }}>{campaign.campaignName}</div>
-                    <div style={{ fontSize: "13px", color: C.muted, marginTop: "3px" }}>{campaign.objective}{" · "}{campaign.timeline}{" · "}{campaign.totalBudget}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => { const t = [campaign.campaignName, "\n\nCaption:\n" + campaign.caption, "\n\nHashtags: " + (campaign.hashtags||[]).join(" "), "\n\nCTA: " + campaign.callToAction].join(""); navigator.clipboard?.writeText(t); }}
-                      style={{ padding: "8px 14px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>{"📋 Copy"}</button>
-                    <button onClick={() => setCampaign(null)} style={{ padding: "8px 14px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, fontSize: "12px", cursor: "pointer" }}>{"Clear"}</button>
-                  </div>
-                </div>
-                {(campaign.platforms || []).map((p, i) => (
-                  <div key={i} style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px", marginBottom: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                      <div style={{ fontSize: "14px", fontWeight: "800" }}>{"📱 "}{p.platform}{" — "}{p.format}</div>
-                      <div style={{ fontSize: "12px", color: C.campLight, fontWeight: "700" }}>{p.budget}{"/day · "}{p.duration}</div>
-                    </div>
-                    {p.audience && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                        <div>
-                          <div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>{"Targeting"}</div>
-                          <div style={{ fontSize: "12px", color: C.muted }}>{"📍 "}{p.audience.location}</div>
-                          <div style={{ fontSize: "12px", color: C.muted }}>{"👤 "}{p.audience.age}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "10px", color: C.dim, textTransform: "uppercase", marginBottom: "3px" }}>{"Interests"}</div>
-                          {(p.audience.interests || []).map((int, j) => <div key={j} style={{ fontSize: "12px", color: C.muted }}>{"• "}{int}</div>)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
-                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"⚡ HOOK"}</div>
-                    <div style={{ fontSize: "14px", fontWeight: "700" }}>{campaign.hook}</div>
-                  </div>
-                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
-                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"🎯 CTA"}</div>
-                    <div style={{ fontSize: "14px", fontWeight: "700" }}>{campaign.callToAction}</div>
-                  </div>
-                </div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px", marginBottom: "12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "7px" }}>
-                    <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase" }}>📝 CAPTION</div>
-                    <button onClick={() => navigator.clipboard?.writeText(campaign.caption || "")} style={{ fontSize: "10px", color: C.muted, background: "transparent", border: `1px solid ${C.border}`, borderRadius: "5px", padding: "2px 8px", cursor: "pointer" }}>Copy</button>
-                  </div>
-                  <div style={{ fontSize: "13px", lineHeight: "1.75", color: "rgba(240,246,252,0.85)", whiteSpace: "pre-wrap" }}>{campaign.caption}</div>
-                </div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px", marginBottom: "12px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px" }}>🏷️ HASHTAGS</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>{(campaign.hashtags || []).map((h, i) => <span key={i} style={{ padding: "3px 10px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "20px", fontSize: "12px", color: C.campLight }}>{h}</span>)}</div>
-                </div>
-                <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "11px", padding: "14px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.campLight, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "7px" }}>{"🎨 CREATIVE DIRECTION FOR HIGGSFIELD"}</div>
-                  <div style={{ fontSize: "13px", color: C.muted, lineHeight: "1.7", marginBottom: "10px" }}>{campaign.creativeDirection}</div>
-                  <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "8px", fontSize: "12px", color: C.gold }}>
-                    {"🎨 Creative brief ready — activate Pro plan to generate with Higgsfield AI"}
-                  </div>
-                </div>
-              </div>
-            )}
-            {!campaign && !campaignLoading && (
-              <div style={{ textAlign: "center", padding: "60px" }}>
-                <div style={{ fontSize: "46px", marginBottom: "12px" }}>{"📣"}</div>
-                <div style={{ fontSize: "20px", fontWeight: "900", marginBottom: "7px" }}>{"BUILD A CAMPAIGN"}</div>
-                <div style={{ fontSize: "13px", color: C.dim, marginBottom: "24px" }}>{"Click 📣 on any lead card to generate a full ad campaign"}</div>
-                <button onClick={() => setActiveTab("scan")} style={{ padding: "10px 24px", background: `linear-gradient(135deg, ${C.camp}, ${C.campLight})`, border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>{"→ Find a Lead First"}</button>
-              </div>
-            )}
-          </>
-        )}
+        <button onClick={()=>setSidebarCollapsed(s=>!s)}
+          style={{ padding:"14px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:sidebarCollapsed?"center":"flex-start", gap:"8px", color:C.muted, fontSize:"12px", fontWeight:"600", transition:"all 0.15s", width:"100%" }}
+          onMouseEnter={e=>{e.currentTarget.style.background=C.bg3;e.currentTarget.style.color=C.white;}}
+          onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.muted;}}>
+          <span style={{ fontSize:"14px", display:"inline-block", transition:"transform 0.25s", transform:sidebarCollapsed?"rotate(180deg)":"none" }}>{"◀"}</span>
+          {!sidebarCollapsed&&<span>{"Collapse"}</span>}
+        </button>
       </div>
 
-      {/* INTELLIGENCE MODAL */}
+      {/* MAIN */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
+        <div style={{ height:"56px", background:C.bg2, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 24px 0 28px", position:"sticky", top:0, zIndex:50 }}>
+          <div style={{ fontSize:"14px", fontWeight:"700", color:C.white }}>
+            {navGroups.flatMap(g=>g.items).find(i=>i.key===activePage)?.label||"Dashboard"}
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+            {userData.credits<CREDITS_PER_SESSION&&<div style={{ padding:"4px 12px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"20px", fontSize:"11px", color:"#EF4444", fontWeight:"600" }}>{"Low credits"}</div>}
+            <div style={{ padding:"4px 12px", background:`${plan.color}10`, border:`1px solid ${plan.color}25`, borderRadius:"20px", fontSize:"11px", fontWeight:"700", color:plan.color }}>{plan.name}</div>
+            <div style={{ fontSize:"12px", color:C.muted }}>{user.email}</div>
+            <button onClick={doLogout} style={{ padding:"6px 14px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:"7px", color:C.muted, cursor:"pointer", fontSize:"12px", fontWeight:"600" }}>{"Logout"}</button>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto" }}>
+          {renderPage()}
+        </div>
+      </div>
+
+      {/* MODALS */}
+
+      {/* INTELLIGENCE REPORT MODAL */}
       {selectedLead && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", backdropFilter: "blur(10px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
-          onClick={e => e.target === e.currentTarget && setSelectedLead(null)}>
-          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "20px", padding: "32px", maxWidth: "760px", width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 25px 60px rgba(0,0,0,0.7)" }}>
-            <button onClick={() => setSelectedLead(null)}
-              style={{ position: "absolute", top: "14px", right: "14px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, width: "30px", height: "30px", cursor: "pointer", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-
-            <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontSize: "20px", fontWeight: "800", marginBottom: "3px" }}>{selectedLead.name}</div>
-              <div style={{ fontSize: "12px", color: C.muted, marginBottom: "14px" }}>
-                {selectedLead.leadType === "b2c" ? `${selectedLead.platform} · ${selectedLead.engagement}` : `${selectedLead.type} · ${selectedLead.location}`}
-              </div>
-
-              {selectedLead.id && (
-                <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "14px" }}>
-                  {STATUS_OPTIONS.map(s => (
-                    <button key={s.value} onClick={() => updateStatus(selectedLead.id, s.value)}
-                      style={{ padding: "4px 10px", borderRadius: "7px", border: `1px solid ${selectedLead.status === s.value ? s.color : C.border}`, background: selectedLead.status === s.value ? s.bg : "transparent", color: selectedLead.status === s.value ? s.color : C.dim, cursor: "pointer", fontSize: "11px", fontWeight: "600", transition: "all 0.15s" }}>
+        <div style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.6)", backdropFilter:"blur(8px)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
+          onClick={e=>e.target===e.currentTarget&&setSelectedLead(null)}>
+          <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"16px", padding:"28px", maxWidth:"700px", width:"100%", maxHeight:"90vh", overflowY:"auto", position:"relative", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+            <button onClick={()=>setSelectedLead(null)}
+              style={{ position:"absolute", top:"14px", right:"14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.muted, width:"30px", height:"30px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center" }}>{"✕"}</button>
+            <div style={{ marginBottom:"18px" }}>
+              <div style={{ fontSize:"18px", fontWeight:"800", color:C.white, marginBottom:"3px" }}>{selectedLead.name}</div>
+              <div style={{ fontSize:"12px", color:C.muted, marginBottom:"14px" }}>{selectedLead.leadType==="b2c"?`${selectedLead.platform} · ${selectedLead.engagement}`:`${selectedLead.type} · ${selectedLead.location}`}</div>
+              {selectedLead.id&&(
+                <div style={{ display:"flex", gap:"4px", flexWrap:"wrap", marginBottom:"12px" }}>
+                  {[{value:"new",label:"New",color:"#6366F1"},{value:"contacted",label:"Contacted",color:C.b2b},{value:"inprogress",label:"In Progress",color:C.camp},{value:"closed",label:"Closed Won",color:C.comp},{value:"lost",label:"Lost",color:"#EF4444"}].map(s=>(
+                    <button key={s.value} onClick={()=>updateStatus(selectedLead.id,s.value)}
+                      style={{ padding:"4px 10px", borderRadius:"6px", border:`1px solid ${selectedLead.status===s.value?s.color:C.border}`, background:selectedLead.status===s.value?`${s.color}10`:"transparent", color:selectedLead.status===s.value?s.color:C.muted, cursor:"pointer", fontSize:"11px", fontWeight:"600" }}>
                       {s.label}
                     </button>
                   ))}
                 </div>
               )}
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "14px" }}>
-                {(selectedLead.leadType === "b2c" ? [
-                  ["📱 Platform", selectedLead.platform],
-                  ["📍 Location", selectedLead.location || "N/A"],
-                  ["🎯 Interest", selectedLead.interestLevel || "High"],
-                  ["💬 Approach", selectedLead.bestApproach || "DM"],
-                ] : [
-                  ["📞 Phone", selectedLead.phone || "N/A"],
-                  ["⭐ Rating", `${selectedLead.rating}/5 (${selectedLead.reviews} reviews)`],
-                  ["🌐 Website", selectedLead.website || "No website"],
-                  ["📍 Address", selectedLead.address || "N/A"],
-                ]).map(([lbl, val]) => (
-                  <div key={lbl} style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "10px 12px" }}>
-                    <div style={{ fontSize: "9px", color: accentColor, fontWeight: "700", letterSpacing: "0.5px", marginBottom: "3px", textTransform: "uppercase" }}>{lbl}</div>
-                    <div style={{ fontSize: "12px", color: C.white }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-
-              {selectedLead.id && (
-                <textarea value={selectedLead.notes || ""} onChange={e => updateNotes(selectedLead.id, e.target.value)} placeholder="Add notes about this lead..."
-                  style={{ width: "100%", padding: "10px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "9px", color: C.white, fontSize: "12px", resize: "vertical", minHeight: "56px", fontFamily: "Inter,sans-serif", marginBottom: "14px" }} />
-              )}
-
-              {/* ONE-CLICK OUTREACH */}
-              {selectedLead.report && (
-                <div style={{ background: C.bg3, border: "1px solid rgba(245,158,11,0.25)", borderRadius: "12px", padding: "14px", marginBottom: "14px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px" }}>{"💬 ONE-CLICK OUTREACH"}</div>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-                    {selectedLead.report.whatsappMessage && (
-                      <button onClick={() => {
-                        const phone = (selectedLead.phone || "").replace(/\D/g, "");
-                        const msg = encodeURIComponent(selectedLead.report.whatsappMessage);
-                        window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, "_blank");
-                      }}
-                        style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.3)", borderRadius: "8px", color: "#25D366", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        Send WhatsApp
+              {selectedLead.report&&(
+                <div style={{ background:C.bg3, border:"1px solid #FDE68A", borderRadius:"10px", padding:"14px", marginBottom:"14px" }}>
+                  <div style={{ fontSize:"10px", fontWeight:"800", color:C.camp, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:"10px" }}>{"ONE-CLICK OUTREACH"}</div>
+                  <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"10px" }}>
+                    {selectedLead.report.whatsappMessage&&(
+                      <button onClick={()=>{const phone=(selectedLead.phone||"").replace(/\D/g,"");const msg=encodeURIComponent(selectedLead.report.whatsappMessage);window.open(phone?`https://wa.me/${phone}?text=${msg}`:`https://wa.me/?text=${msg}`,"_blank");}}
+                        style={{ display:"flex", alignItems:"center", gap:"7px", padding:"9px 16px", background:"rgba(37,211,102,0.1)", border:"1px solid rgba(37,211,102,0.3)", borderRadius:"8px", color:"#16A34A", fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>
+                        {"WhatsApp"}
                       </button>
                     )}
-                    {selectedLead.report.emailBody && (
-                      <button onClick={() => {
-                        const to = selectedLead.email || "";
-                        const sub = encodeURIComponent(selectedLead.report.emailSubject || "");
-                        const body = encodeURIComponent(safeStr(selectedLead.report.emailBody) || "");
-                        window.open(`mailto:${to}?subject=${sub}&body=${body}`, "_blank");
-                      }}
-                        style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", borderRadius: "8px", color: "#60A5FA", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                        Send Email
+                    {selectedLead.report.emailBody&&(
+                      <button onClick={()=>{const to=selectedLead.email||"";const sub=encodeURIComponent(selectedLead.report.emailSubject||"");const body=encodeURIComponent(safeStr(selectedLead.report.emailBody)||"");window.open(`mailto:${to}?subject=${sub}&body=${body}`,"_blank");}}
+                        style={{ display:"flex", alignItems:"center", gap:"7px", padding:"9px 16px", background:`${C.b2bGlow}`, border:`1px solid ${C.b2bBorder}`, borderRadius:"8px", color:C.b2b, fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>
+                        {"Send Email"}
                       </button>
                     )}
-                    <button onClick={() => { setSelectedLead(null); setActiveTab("campaigns"); buildCampaign(selectedLead); }}
-                      style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", background: C.campGlow, border: `1px solid ${C.campBorder}`, borderRadius: "8px", color: C.campLight, fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
-                      📣 Build Campaign
+                    <button onClick={()=>{setSelectedLead(null);setActivePage("campaigns");buildCampaign(selectedLead);}}
+                      style={{ padding:"9px 16px", background:`${C.campGlow}`, border:`1px solid ${C.campBorder}`, borderRadius:"8px", color:C.camp, fontSize:"13px", fontWeight:"700", cursor:"pointer" }}>
+                      {"Build Campaign"}
                     </button>
                   </div>
-                  {selectedLead.report.whatsappMessage && (
-                    <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: "8px", padding: "10px 12px" }}>
-                      <div style={{ fontSize: "9px", color: "#25D366", fontWeight: "700", letterSpacing: "0.5px", marginBottom: "4px" }}>WHATSAPP PREVIEW</div>
-                      <div style={{ fontSize: "12px", color: C.muted, lineHeight: "1.6" }}>{selectedLead.report.whatsappMessage}</div>
+                  {selectedLead.report.whatsappMessage&&(
+                    <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"10px 12px" }}>
+                      <div style={{ fontSize:"9px", color:"#16A34A", fontWeight:"700", letterSpacing:"0.5px", marginBottom:"4px" }}>{"WHATSAPP PREVIEW"}</div>
+                      <div style={{ fontSize:"12px", color:C.muted, lineHeight:"1.6" }}>{selectedLead.report.whatsappMessage}</div>
                     </div>
                   )}
                 </div>
               )}
+              {selectedLead.id&&<textarea value={selectedLead.notes||""} onChange={e=>updateNotes(selectedLead.id,e.target.value)} placeholder="Add notes..." style={{ width:"100%", padding:"9px 12px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.white, fontSize:"12px", resize:"vertical", minHeight:"50px", fontFamily:"Inter,sans-serif", marginBottom:"12px" }} />}
             </div>
-
-            {selectedLead.loading && (
-              <div style={{ textAlign: "center", padding: "36px" }}>
-                <LoadingDots color={accentColor} />
-                <div style={{ color: C.muted, marginTop: "10px", fontSize: "13px" }}>Building intelligence report...</div>
-              </div>
-            )}
-            {selectedLead.reportErr && <div style={{ color: "#F87171", padding: "14px", background: "rgba(239,68,68,0.08)", borderRadius: "10px", fontSize: "13px", marginBottom: "14px" }}>{selectedLead.reportErr}</div>}
-
-            {selectedLead.report && (() => {
-              const r = selectedLead.report;
-              const isB2C = selectedLead.leadType === "b2c";
-              const sections = isB2C ? [
-                ["👤 Profile Analysis", r.profileAnalysis],
-                ["🧠 Psychological Profile", r.psychologicalProfile],
-                ["📈 Buying Signals", r.buyingSignals],
-                ["🛡️ Objections & How To Handle", r.likelyObjections],
-                ["🎯 Pitch Strategy", r.pitchStrategy],
-                ["💬 Opening Message", r.openingMessage],
-                ["📅 Follow-Up Sequence", r.followUpSequence],
-                ["🔑 Closing Script", r.closingScript],
-                ["⏰ Best Time To Reach Out", r.bestTime],
-                ["⚡ #1 Conversion Tip", r.conversionTip],
-                ["🎨 Creative Insight", r.creativeInsight],
-              ] : [
-                ["🏢 Company Overview", r.companyOverview],
-                ["⚠️ Weakness Analysis", r.weaknessAnalysis],
-                ["🌐 Website Analysis", r.websiteAnalysis],
-                ["👤 Decision Maker Profile", r.decisionMaker],
-                ["🧠 Psychological Profile", r.emotionalProfile],
-                ["🛡️ Expected Objections", r.objections],
-                ["🎯 Pitch Strategy", r.pitchStrategy],
-                ["💬 Perfect Opening Line", r.openingLine],
-                ["💬 WhatsApp Message", r.whatsappMessage],
-                ["🔑 Closing Angle", r.closingAngle],
-                ["✉️ Cold Email Template", r.emailTemplate],
+            {selectedLead.loading&&<div style={{ textAlign:"center", padding:"32px" }}><LoadingDots color={C.b2b} /><div style={{ color:C.muted, marginTop:"10px", fontSize:"13px" }}>{"Building intelligence report..."}</div></div>}
+            {selectedLead.reportErr&&<div style={{ color:"#EF4444", padding:"12px", background:"#FEF2F2", borderRadius:"9px", fontSize:"13px", marginBottom:"12px" }}>{selectedLead.reportErr}</div>}
+            {selectedLead.report&&(()=>{
+              const r=selectedLead.report;
+              const isB2C=selectedLead.leadType==="b2c";
+              const sections=isB2C?[
+                ["Profile Analysis",r.profileAnalysis],["Psychological Profile",r.psychologicalProfile],["Buying Signals",r.buyingSignals],
+                ["Objections",r.likelyObjections],["Pitch Strategy",r.pitchStrategy],["Opening Message",r.openingMessage],
+                ["Follow-Up Sequence",r.followUpSequence],["Closing Script",r.closingScript],["Best Time",r.bestTime],
+                ["Conversion Tip",r.conversionTip],["Creative Insight",r.creativeInsight],
+              ]:[
+                ["Company Overview",r.companyOverview],["Weakness Analysis",r.weaknessAnalysis],["Website Analysis",r.websiteAnalysis],
+                ["Decision Maker",r.decisionMaker],["Emotional Profile",r.emotionalProfile],["Objections",r.objections],
+                ["Pitch Strategy",r.pitchStrategy],["Closing Angle",r.closingAngle],["Best Time",r.bestTime],
+                ["Campaign Idea",r.campaignIdea],["Cold Email",r.emailBody],
               ];
-              return sections.filter(([, v]) => safeStr(v)).map(([title, content], i) => (
-                <div key={i} style={{ marginBottom: "16px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: accentColor, textTransform: "uppercase", letterSpacing: "2px", marginBottom: "7px", paddingBottom: "5px", borderBottom: `1px solid ${C.border}` }}>{title}</div>
-                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "9px", padding: "14px", fontSize: "13px", lineHeight: "1.8", color: "rgba(240,246,252,0.82)", whiteSpace: "pre-wrap" }}>{safeStr(content)}</div>
+              return sections.filter(([,v])=>safeStr(v)).map(([title,content2],i)=>(
+                <div key={i} style={{ marginBottom:"14px" }}>
+                  <div style={{ fontSize:"10px", fontWeight:"700", color:C.b2b, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"6px", paddingBottom:"4px", borderBottom:`1px solid ${C.border}` }}>{title}</div>
+                  <div style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"12px", fontSize:"13px", lineHeight:"1.8", color:C.white, whiteSpace:"pre-wrap" }}>{safeStr(content2)}</div>
                 </div>
               ));
             })()}
@@ -1647,38 +1607,28 @@ Return ONLY raw JSON:
       )}
 
       {/* COMPETITOR DEEP MODAL */}
-      {selectedComp && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", backdropFilter: "blur(10px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
-          onClick={e => e.target === e.currentTarget && setSelectedComp(null)}>
-          <div style={{ background: C.bg2, border: `1px solid ${C.compBorder}`, borderRadius: "20px", padding: "32px", maxWidth: "700px", width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
-            <button onClick={() => setSelectedComp(null)}
-              style={{ position: "absolute", top: "14px", right: "14px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "8px", color: C.muted, width: "30px", height: "30px", cursor: "pointer", fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-            <div style={{ fontSize: "11px", fontWeight: "800", color: C.compLight, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "6px" }}>{"🕵️ COMPETITOR DEEP ANALYSIS"}</div>
-            <div style={{ fontSize: "19px", fontWeight: "800", marginBottom: "3px" }}>{selectedComp.name}</div>
-            <div style={{ fontSize: "12px", color: C.muted, marginBottom: "20px" }}>{selectedComp.marketPosition} · Strength {selectedComp.strength}/100</div>
-            {selectedComp.loading && <div style={{ textAlign: "center", padding: "36px" }}><LoadingDots color={C.compLight} /><div style={{ color: C.muted, marginTop: "10px", fontSize: "13px" }}>Analyzing...</div></div>}
-            {selectedComp.reportErr && <div style={{ color: "#F87171", padding: "14px", background: "rgba(239,68,68,0.08)", borderRadius: "10px", fontSize: "13px" }}>{selectedComp.reportErr}</div>}
-            {selectedComp.report && (() => {
-              const r = selectedComp.report;
-              return [
-                ["🔍 Deep Analysis", r.deepAnalysis],
-                ["📊 Their Strategy", r.theirStrategy],
-                ["🎯 Their Vulnerabilities", r.theirVulnerabilities],
-                ["⚔️ How To Beat Them", r.howToBeatThem],
-                ["🏆 Your Positioning", r.positioningMessage],
-                ["📋 Action Plan", r.actionPlan],
-                ["💡 Key Learning", r.keyLearning],
-              ].filter(([, v]) => safeStr(v)).map(([title, value], i) => (
-                <div key={i} style={{ marginBottom: "14px" }}>
-                  <div style={{ fontSize: "10px", fontWeight: "800", color: C.compLight, textTransform: "uppercase", letterSpacing: "2px", marginBottom: "6px", paddingBottom: "5px", borderBottom: `1px solid ${C.border}` }}>{title}</div>
-                  <div style={{ background: C.bg3, border: `1px solid ${C.border}`, borderRadius: "9px", padding: "13px", fontSize: "13px", lineHeight: "1.8", color: "rgba(240,246,252,0.82)", whiteSpace: "pre-wrap" }}>{safeStr(value)}</div>
+      {selectedComp&&(
+        <div style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.6)", backdropFilter:"blur(8px)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}
+          onClick={e=>e.target===e.currentTarget&&setSelectedComp(null)}>
+          <div style={{ background:C.bg2, border:`1px solid ${C.compBorder}`, borderRadius:"16px", padding:"28px", maxWidth:"700px", width:"100%", maxHeight:"90vh", overflowY:"auto", position:"relative", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+            <button onClick={()=>setSelectedComp(null)} style={{ position:"absolute", top:"14px", right:"14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", color:C.muted, width:"30px", height:"30px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center" }}>{"✕"}</button>
+            <div style={{ fontSize:"11px", fontWeight:"800", color:C.comp, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"6px" }}>{"COMPETITOR DEEP ANALYSIS"}</div>
+            <div style={{ fontSize:"19px", fontWeight:"800", color:C.white, marginBottom:"3px" }}>{selectedComp.name}</div>
+            <div style={{ fontSize:"12px", color:C.muted, marginBottom:"20px" }}>{selectedComp.marketPosition}{" · Strength "}{selectedComp.strength}{"/100"}</div>
+            {selectedComp.loading&&<div style={{ textAlign:"center", padding:"32px" }}><LoadingDots color={C.comp} /></div>}
+            {selectedComp.reportErr&&<div style={{ color:"#EF4444", padding:"12px", background:"#FEF2F2", borderRadius:"9px", fontSize:"13px" }}>{selectedComp.reportErr}</div>}
+            {selectedComp.report&&(()=>{
+              const r=selectedComp.report;
+              return [["Deep Analysis",r.deepAnalysis],["Their Strategy",r.theirStrategy],["Their Vulnerabilities",r.theirVulnerabilities],["How To Beat Them",r.howToBeatThem],["Your Positioning",r.positioningMessage],["Action Plan",r.actionPlan],["Key Learning",r.keyLearning]].filter(([,v])=>safeStr(v)).map(([title,value],i)=>(
+                <div key={i} style={{ marginBottom:"14px" }}>
+                  <div style={{ fontSize:"10px", fontWeight:"700", color:C.comp, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"6px", paddingBottom:"4px", borderBottom:`1px solid ${C.border}` }}>{title}</div>
+                  <div style={{ background:C.bg3, border:`1px solid ${C.border}`, borderRadius:"8px", padding:"12px", fontSize:"13px", lineHeight:"1.8", color:C.white, whiteSpace:"pre-wrap" }}>{safeStr(value)}</div>
                 </div>
               ));
             })()}
           </div>
         </div>
       )}
-
     </div>
   );
 }
